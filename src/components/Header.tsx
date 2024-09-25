@@ -4,6 +4,9 @@ import {
   Toolbar,
   TextField,
   InputAdornment,
+  Button,
+  Menu,
+  MenuItem,
   Autocomplete,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
@@ -12,17 +15,57 @@ import { z } from "zod"; // Import zod
 import axiosInstance from "../api/axiosConfig"; // Import axiosInstance
 import LogoSection from "../components/logoSection"; // Import the new component
 
+interface Props {
+  onCategorySelect: (category: string) => void;
+}
+
 const searchSchema = z
   .string()
   .min(3, "Search query must be at least 3 characters long");
 
-const Header: React.FC = () => {
+const Header: React.FC<Props> = ({ onCategorySelect }) => {
+  const [movieAnchorEl, setMovieAnchorEl] = useState<null | HTMLElement>(null);
+  const [tvShowAnchorEl, setTVShowAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null); // State for error message
 
   const navigate = useNavigate();
 
+  // PILIHAN KATEGORI MOVIES
+  const handleMoviesMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setMovieAnchorEl(event.currentTarget);
+  };
+
+  const handleMoviesMenuClose = (category: string) => {
+    setMovieAnchorEl(null);
+
+    if (category === "Top Rated Movies") {
+      navigate("/movies/top-rated"); // Navigasi ke halaman MovieTable
+    } else if (category === "Now Playing Movies") {
+      navigate("/movies/now-playing"); 
+    }
+  };
+
+  // PILIHAN KATEGORI TV
+  const handleTVShowsMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setTVShowAnchorEl(event.currentTarget);
+  };
+
+  const handleTVShowsMenuClose = (category: string) => {
+    console.log("Navigating to:", category);
+    setTVShowAnchorEl(null);
+    
+    if (category === "Top Rated TV Shows") {
+      navigate("/tv/top-rated"); // Navigasi ke halaman TVShowTable
+    } else if (category === "Airing Today TV Shows") {
+      navigate("/tv/airing-today"); 
+    }
+
+    onCategorySelect(category);
+  };
+
+  // SEARCHBAR
   const handleSearchChange = async (newInputValue: string) => {
     setSearchQuery(newInputValue);
 
@@ -65,6 +108,20 @@ const Header: React.FC = () => {
           {/* Use the new LogoSection component */}
           <LogoSection />
 
+          {/* PILIHAN KATEGORI MOVIES & TV SHOWS */}
+          <Button sx={{ marginLeft: "55%", color: "#333" }} color="inherit" onClick={handleMoviesMenuClick}> Movies </Button>
+          <Menu anchorEl={movieAnchorEl} open={Boolean(movieAnchorEl)} onClose={() => setMovieAnchorEl(null)}>
+            <MenuItem onClick={() => handleMoviesMenuClose("Top Rated Movies")}> Top Rated </MenuItem>
+            <MenuItem onClick={() => handleMoviesMenuClose("Now Playing Movies")}> Now Playing </MenuItem>
+          </Menu>
+
+          <Button sx={{ color: "#333", ml: "35px" }} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
+          <Menu anchorEl={tvShowAnchorEl} open={Boolean(tvShowAnchorEl)} onClose={() => setTVShowAnchorEl(null)}>
+            <MenuItem onClick={() => handleTVShowsMenuClose("Top Rated TV Shows")}> Top Rated </MenuItem>
+            <MenuItem onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}> Airing Today </MenuItem>
+          </Menu>
+
+          {/* SEARCHBAR */}
           <Autocomplete
             sx={{ mr: 2, marginLeft: "auto", width: "300px" }}
             freeSolo

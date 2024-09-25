@@ -1,6 +1,5 @@
-// src/components/Bookmarked.tsx
 import { useEffect, useState } from "react";
-import "../components/Bookmarked.css";
+import "../components/Bookmarked.css"; // Mengimpor file CSS
 import {
   createColumnHelper,
   flexRender,
@@ -16,6 +15,9 @@ import {
 } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import IconButton from "@mui/material/IconButton";
 
 interface User {
   poster_path: string;
@@ -24,40 +26,46 @@ interface User {
   vote_average: number;
   like: number;
   id: number;
+  isBookmarked: boolean;
 }
 
 const columnHelper = createColumnHelper<User>();
 
-const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: number) => void) => [
+const columns = (
+  genreMap: { [key: number]: string },
+  handleLike: (movieId: number) => void,
+  handleBookmark: (movieId: number) => void
+) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
     cell: (info) => (
       <img
         src={`https://image.tmdb.org/t/p/w200${info.getValue()}`}
         alt={info.row.original.title}
-        style={{ height: "100px" }}
+        style={{ height: "100px", borderRadius: "8px" }} // Rounded edges for more style
       />
     ),
   }),
   columnHelper.accessor("title", {
     header: () => "Title",
-    cell: (info) => info.getValue(),
+    cell: (info) => <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>, // Make title bold
   }),
   columnHelper.accessor("genre_ids", {
     header: () => "Genre",
     cell: (info) => {
-      const genres = info.getValue()
+      const genres = info
+        .getValue()
         .map((id) => genreMap[id])
-        .filter(Boolean); // Filter out any undefined values
+        .filter(Boolean);
 
-      return genres.length > 0 ? genres.join(", ") : "Unknown"; // Show 'Unknown' if no genres
+      return genres.length > 0 ? genres.join(", ") : "Unknown";
     },
   }),
   columnHelper.accessor("vote_average", {
     header: () => "Rating",
     cell: (info) => {
       const rating = info.getValue();
-      return rating.toFixed(1); // Format to 1 decimal place
+      return rating.toFixed(1);
     },
   }),
   columnHelper.accessor("like", {
@@ -65,10 +73,23 @@ const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: numb
     cell: (info) => {
       const movie = info.row.original;
       return (
-        <div>
-          <ThumbUpIcon onClick={() => handleLike(movie.id)} />
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <IconButton onClick={() => handleLike(movie.id)}>
+            <ThumbUpIcon />
+          </IconButton>
           <span>{movie.like}</span>
         </div>
+      );
+    },
+  }),
+  columnHelper.accessor("isBookmarked", {
+    header: () => "Bookmark",
+    cell: (info) => {
+      const movie = info.row.original;
+      return (
+        <IconButton onClick={() => handleBookmark(movie.id)}>
+          {movie.isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+        </IconButton>
       );
     },
   }),
@@ -78,8 +99,8 @@ const MovieTable = () => {
   const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [category, setCategory] = useState("top-rated-movies");
-  const [page, setPage] = useState(1); // Pagination state
-  const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -96,7 +117,6 @@ const MovieTable = () => {
         );
         setGenres(genreMap);
 
-        // Fetch movies or TV shows based on the selected category
         await fetchMoviesOrShows(category, page);
       } catch (error) {
         console.error("Error fetching data", error);
@@ -147,11 +167,21 @@ const MovieTable = () => {
     }
   };
 
+  const handleBookmark = async (movieId: number) => {
+    setMovies((prevMovies) =>
+      prevMovies.map((movie) =>
+        movie.id === movieId
+          ? { ...movie, isBookmarked: !movie.isBookmarked }
+          : movie
+      )
+    );
+  };
+
   const table = useReactTable({
     data: movies,
-    columns: columns(genres, handleLike),
+    columns: columns(genres, handleLike, handleBookmark),
     getCoreRowModel: getCoreRowModel(),
-    manualPagination: true, // Enable manual pagination
+    manualPagination: true,
     pageCount: totalPages,
   });
 
@@ -168,10 +198,10 @@ const MovieTable = () => {
   };
 
   return (
-    <div>
-      <h2> Movies and TV Shows </h2>
+    <div className="movie-table-container">
+      <h2 className="table-header"> Movies and TV Shows </h2>
 
-      <div style={{ marginBottom:'12px'}}>
+      <div className="category-buttons">
         <button onClick={() => setCategory("top-rated-movies")}>Top Rated Movies</button>
         <button onClick={() => setCategory("now-playing-movies")}>Now Playing Movies</button>
         <button onClick={() => setCategory("top-rated-tv")}>Top Rated TV Shows</button>
@@ -184,7 +214,7 @@ const MovieTable = () => {
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th key={header.id} className="users-table-cell">
+                <th key={header.id}>
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </th>
               ))}
@@ -195,7 +225,7 @@ const MovieTable = () => {
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="users-table-cell">
+                <td key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -203,6 +233,7 @@ const MovieTable = () => {
           ))}
         </tbody>
       </table>
+
       <div className="pagination-controls">
         <button onClick={prevPage} disabled={page === 1}>
           {"<"}

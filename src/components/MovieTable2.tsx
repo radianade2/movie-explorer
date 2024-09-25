@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "../components/ShowsTable.css";
+// import "../components/ShowsTable.css";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import {  fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
 import axios from "axios";
