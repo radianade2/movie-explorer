@@ -2,50 +2,104 @@ import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
-  Typography,
-  Tabs,
-  Tab,
   TextField,
   InputAdornment,
+  Autocomplete,
 } from "@mui/material";
-import LocalMoviesIcon from "@mui/icons-material/LocalMovies";
 import SearchIcon from "@mui/icons-material/Search";
+import { useNavigate } from "react-router-dom";
+import { z } from "zod"; // Import zod
+import axiosInstance from "../api/axiosConfig"; // Import axiosInstance
+import LogoSection from "../components/logoSection"; // Import the new component
+
+const searchSchema = z
+  .string()
+  .min(3, "Search query must be at least 3 characters long");
 
 const Header: React.FC = () => {
-  const [value, setValue] = useState();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null); // State for error message
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-    // Lakukan sesuatu dengan searchQuery, misalnya kirim ke backend atau filter data lokal
+  const navigate = useNavigate();
+
+  const handleSearchChange = async (newInputValue: string) => {
+    setSearchQuery(newInputValue);
+
+    try {
+      // Validate search query using zod schema
+      searchSchema.parse(newInputValue);
+      setSearchError(null); // Reset error if valid
+
+      if (newInputValue.length > 2) {
+        const response = await axiosInstance.get("/search/multi", {
+          params: {
+            query: newInputValue,
+            page: 1,
+            include_adult: false,
+          },
+        });
+        setSearchResults(response.data.results);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      // Handle validation error
+      if (error instanceof z.ZodError) {
+        setSearchError(error.errors[0].message); // Show error message if validation fails
+        setSearchResults([]);
+      }
+    }
+  };
+
+  const handleSearchSubmit = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && searchQuery.length > 2 && !searchError) {
+      navigate(`/search?query=${searchQuery}`);
+    }
   };
 
   return (
     <React.Fragment>
       <AppBar>
-        <Toolbar sx={{ backgroundColor: "#063970", animation: "fadeIn 0.5s", }}>
-          <LocalMoviesIcon></LocalMoviesIcon>
+        <Toolbar sx={{ backgroundColor: "#FECE04", animation: "fadeIn 0.5s" }}>
+          {/* Use the new LogoSection component */}
+          <LogoSection />
 
-          <Typography sx={{ marginLeft: "10px" }}>Cinemaku</Typography>
-
-          <Tabs
-            sx={{ marginLeft: "auto" }}
-            textColor="inherit"
-            value={value}
-            onChange={(e, value) => setValue(value)}
-            indicatorColor="primary"
-          >
-            <Tab label="Movies" />
-            <Tab label="TV Shows" />
-          </Tabs>
-
-          <TextField size="small" variant="outlined" placeholder="Search..." value={searchQuery} onChange={handleSearchChange} 
-          sx={{marginLeft:"20px",  backgroundColor:"white", borderRadius:10}}
-          InputProps={{startAdornment:(
-            <InputAdornment position = "start">
-                <SearchIcon/>
-            </InputAdornment>
-          )}}/>
+          <Autocomplete
+            sx={{ mr: 2, marginLeft: "auto", width: "300px" }}
+            freeSolo
+            options={searchResults.map(
+              (option: any) => option.title || option.name
+            )}
+            onInputChange={(event, newInputValue) =>
+              handleSearchChange(newInputValue)
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined"
+                size="small"
+                placeholder="Search..."
+                onKeyDown={handleSearchSubmit} // Submit on Enter
+                error={!!searchError} // Display error state if there's an error
+                helperText={searchError} // Show error message if validation fails
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  backgroundColor: "white",
+                  borderRadius: 10,
+                  width: "100%",
+                  marginRight: "40px",
+                }}
+              />
+            )}
+          />
         </Toolbar>
       </AppBar>
     </React.Fragment>
