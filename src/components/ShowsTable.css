@@ -1,0 +1,60 @@
+/* ShowsTable.css */
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #333; /* Set background color to #333 */
+  color: white; /* Set text color to white */
+  border-radius: 5px; /* Add border-radius to the table */
+  overflow: hidden; /* Ensure the rounded corners are visible */
+  margin-top: "20px";
+}
+
+.users-table th, 
+.users-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #555; /* Set border color to a lighter shade for separation */
+}
+
+.users-table th {
+  background-color: #444; /* Slightly different background for table headers */
+}
+
+.users-table td {
+  color: white; /* Ensure text in cells is white */
+}
+
+.users-table img {
+  border-radius: 5px; /* Add border-radius to images if needed */
+}
+
+.users-table-cell {
+  padding: 10px;
+}
+
+.pagination-controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pagination-controls button {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 0 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.pagination-controls button:disabled {
+  background-color: #777;
+  cursor: not-allowed;
+  /* margin-bottom: 30px; */
+}
+
+/* Change the icon color to white */
+.MuiSvgIcon-root {
+  color: white !important;
+}

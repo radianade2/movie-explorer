@@ -140,6 +140,7 @@ const MovieTable = () => {
                 </td>
               ))}
             </tr>
+            
           ))}
         </tbody>
       </table>

@@ -116,10 +116,10 @@ const MovieTable = () => {
   };
 
   return (
-    <div style={{padding:"50px"}} >
-      <h2 >Top Rated Movies</h2>
+    <div style={{marginBottom:"50px"}} >
+      <h2>Top Rated Movies</h2>
       {isLoading && <p>Loading...</p>}
-      <table  className="users-table"  >
+      <table  className="users-table">
         <thead >
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -131,7 +131,7 @@ const MovieTable = () => {
             </tr>
           ))}
         </thead>
-        <tbody >
+        <tbody>
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id}>
               {row.getVisibleCells().map((cell) => (
