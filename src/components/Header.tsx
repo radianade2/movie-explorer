@@ -25,9 +25,7 @@ const searchSchema = z
 
 const Header: React.FC<Props> = ({ onCategorySelect }) => {
   const [movieAnchorEl, setMovieAnchorEl] = useState<null | HTMLElement>(null);
-  const [tvShowAnchorEl, setTVShowAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
+  const [tvShowAnchorEl, setTVShowAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null); // State for error message
@@ -57,9 +55,9 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
     console.log("Navigating to:", category);
     setTVShowAnchorEl(null);
     
-    if (category === "Top Rated TV Show") {
+    if (category === "Top Rated TV Shows") {
       navigate("/tv/top-rated"); // Navigasi ke halaman TVShowTable
-    } else if (category === "Airing Today TV Show") {
+    } else if (category === "Airing Today TV Shows") {
       navigate("/tv/airing-today"); 
     }
 
@@ -175,7 +173,7 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
                   ...params.InputProps,
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon />
+                      <SearchIcon sx={{color:"#333"}}/>
                     </InputAdornment>
                   ),
                 }}

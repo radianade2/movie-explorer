@@ -64,18 +64,18 @@ export const fetchTopRatedTV = async (page: number = 1) => {
       params: { page }
     });
     return {
-      results: response.data.results.map((tv: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-        title: tv.title,
+      results: response.data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: tv.name,  // Changed 'title' to 'name'
         id: tv.id,
         poster_path: tv.poster_path,
         genre_ids: tv.genre_ids,
         vote_average: tv.vote_average,
       })),
-      total_pages: response.data.total_pages, // total pages returned by API
-      total_results: response.data.total_results, // Total number of movies returned by API
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
     };
   } catch (error) {
-    console.error('Error fetching tv shows:', error);
+    console.error('Error fetching TV shows:', error);
     return { results: [], total_pages: 1, total_results: 0 };
   }
 };
@@ -86,18 +86,18 @@ export const fetchAiringTodayTVShows = async (page: number = 1) => {
       params: { page }
     });
     return {
-      results: response.data.results.map((tv: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-        title: tv.title,
+      results: response.data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: tv.name,  // Changed 'title' to 'name'
         id: tv.id,
         poster_path: tv.poster_path,
         genre_ids: tv.genre_ids,
         vote_average: tv.vote_average,
       })),
-      total_pages: response.data.total_pages, // total pages returned by API
-      total_results: response.data.total_results, // Total number of movies returned by API
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
     };
   } catch (error) {
-    console.error('Error fetching tv shows:', error);
+    console.error('Error fetching TV shows:', error);
     return { results: [], total_pages: 1, total_results: 0 };
   }
 };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "../components/ShowsTable.css";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { fetchTopRatedMovies, fetchGenres } from "../api/apiConfig";
+import {  fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { colors } from "@mui/material";
@@ -25,12 +25,12 @@ const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: numb
   columnHelper.accessor("title", { header: () => "Title", cell: (info) => info.getValue() || "unknown" }),
   columnHelper.accessor("genre_ids", {
     header: () => "Genre",
-    cell: (info) =>{
-      const genres = info.getValue().map((id) => genreMap[id]).join(", ");
-      return genres || "unknown";
-    } 
+    cell: (info) => {
+        const genre = info.getValue().map((id) => genreMap[id]).join(", ");
+        return genre || "unknown";
+    }
   }),
-  columnHelper.accessor("vote_average", { header: () => "Rating", cell: (info) => info.getValue() }),
+  columnHelper.accessor("vote_average", { header: () => "Rating", cell: (info) => info.getValue() ||"unknown"}),
   columnHelper.accessor("like", {
     header: () => "Like",
     cell: (info) => {
@@ -45,7 +45,7 @@ const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: numb
   }),
 ];
 
-const MovieTable = () => {
+const MovieTable2 = () => {
   const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
@@ -76,7 +76,7 @@ const MovieTable = () => {
 
   const fetchMovies = async (page: number) => {
     try {
-      const fetchedMovies = await fetchTopRatedMovies(page); // Pass page and limit 5 items
+      const fetchedMovies = await fetchNowPlayingMovies(page); // Pass page and limit 5 items
       setMovies(fetchedMovies.results); // Set only current page's results
       setTotalPages(fetchedMovies.total_pages); // Set total pages from API response
     } catch (error) {
@@ -120,7 +120,7 @@ const MovieTable = () => {
 
   return (
     <div style={{marginTop:"80px", marginBottom:"80px"}} >
-      <h2 >Top Rated Movies</h2>
+      <h2 >Now Playing Movies</h2>
       {isLoading && <p>Loading...</p>}
       <table  className="users-table"  >
         <thead >
@@ -155,4 +155,4 @@ const MovieTable = () => {
   );
 };
 
-export default MovieTable;
+export default MovieTable2;

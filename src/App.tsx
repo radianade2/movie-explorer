@@ -9,10 +9,10 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import Dashboard from "./pages/dashboard";
-import MoviesPage from "./pages/MoviesPage";
-import TVShowsPage from "./pages/TVShowsPage";
-import MovieTable from "./components/ShowsTable";
+import MovieTable from "./components/MovieTable";
 import TVShowTable from "./components/TVShowTable";
+import MovieTable2 from "./components/MovieTable2";
+import TVShowTable2 from "./components/TVShowTable2";
 
 // const MainContent: React.FC<{ selectedCategory: string }> = ({
 //   selectedCategory,
@@ -49,13 +49,13 @@ const App: React.FC = () => {
       <Routes>
         <Route
           path="/"
-          // element={<Dashboard selectedCategory={selectedCategory} />}
+          element={<Dashboard />}
         />
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/movies/top-rated" element={<MovieTable />} />
-        {/* <Route path="/movies/now-playing" element={<MovieTable />} /> */}
+        <Route path="/movies/now-playing" element={<MovieTable2 />} />
         <Route path="/tv/top-rated" element={<TVShowTable />} />
-        {/* <Route path="/tv/airing-today" element={<TVShowTable />} /> */}
+        <Route path="/tv/airing-today" element={<TVShowTable2 />} />
       </Routes>
 
       {/* Footer diletakkan di bawah halaman */}

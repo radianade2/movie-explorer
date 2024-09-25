@@ -4,9 +4,10 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import MoviesPage from "./MoviesPage";
 import TVShowsPage from "./TVShowsPage";
-import ShowsTable from "../components/ShowsTable";
-import MovieTable from "../components/ShowsTable";
+// import ShowsTable from "../components/ShowsTable";
+import MovieTable from "../components/MovieTable";
 import TVShowTable from "../components/TVShowTable";
+import { Typography } from "@mui/material";
 
 const Dashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("Top Rated Movies");
@@ -24,11 +25,7 @@ const Dashboard: React.FC = () => {
   
       {/* Konten Utama */}
       <Grid sx={{ flexGrow: 1, padding: 2 }}>
-        {selectedCategory.includes("Movies") ? (
-          <MovieTable />
-        ) : (
-          <TVShowTable />
-        )}
+        <Typography sx={{mt:10}}> Selamat datang di Cinemaku</Typography>
       </Grid>
   
       {/* Footer */}
