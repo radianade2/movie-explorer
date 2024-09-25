@@ -1,0 +1,22 @@
+/* /src/components/ShowsTable.css */
+.users-table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .users-table-cell {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
+
+  .users-table th, .users-table td {
+    padding: 10px; /* Menambahkan padding untuk sel */
+    border: 1px solid #ccc; /* Menambahkan border ke sel */
+    text-align: center;
+}
+  
+  .users-table th {
+    background-color: #f2f2f2; /* Warna latar belakang untuk header */
+  }

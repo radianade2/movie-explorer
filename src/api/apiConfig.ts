@@ -1,137 +1,103 @@
-// Movies
-export const fetchTopRatedMovies = async () => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmZjA4OGM1MWFjYzg3YjlmMzdhYzdjMzFjNjM4NTVjYiIsIm5iZiI6MTcyNjczMzM1My42OTUxNjIsInN1YiI6IjY2ZWI4NmFkNTE2OGE4OTZlMTFmYzM0NyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Lm71BhcljFCv_p0eBMx0TpOOf8cuXwbeT-SalQYkyIs',
-    },
-  };
+// src/api/apiConfig.ts
+import axiosInstance from './axiosConfig';
 
-  try {
-    const response = await fetch('https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1', options);
-    if (!response.ok) {
-      throw new Error('Failed to fetch movies');
-    }
-    const data = await response.json();
-    return data.results.map((movie: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-      title: movie.title,
-      id: movie.id,
-      poster_path: movie.poster_path,
-      genre_ids: movie.genre_ids,
-      vote_average: movie.vote_average,
-    }));
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-};
-
-export const fetchNowPlayingMovies = async () => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmZjA4OGM1MWFjYzg3YjlmMzdhYzdjMzFjNjM4NTVjYiIsIm5iZiI6MTcyNjczMzM1My42OTUxNjIsInN1YiI6IjY2ZWI4NmFkNTE2OGE4OTZlMTFmYzM0NyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Lm71BhcljFCv_p0eBMx0TpOOf8cuXwbeT-SalQYkyIs',
-    },
-  };
-
-  try {
-    const response = await fetch('https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1', options);
-    if (!response.ok) {
-      throw new Error('Failed to fetch movies');
-    }
-    const data = await response.json();
-    return data.results.map((movie: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-      title: movie.title,
-      id: movie.id,
-      poster_path: movie.poster_path,
-      genre_ids: movie.genre_ids,
-      vote_average: movie.vote_average,
-    }));
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-};
-
+// Genres
 export const fetchGenres = async () => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmZjA4OGM1MWFjYzg3YjlmMzdhYzdjMzFjNjM4NTVjYiIsIm5iZiI6MTcyNjczMzM1My42OTUxNjIsInN1YiI6IjY2ZWI4NmFkNTE2OGE4OTZlMTFmYzM0NyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Lm71BhcljFCv_p0eBMx0TpOOf8cuXwbeT-SalQYkyIs',
-    },
-  };
-
   try {
-    const response = await fetch('https://api.themoviedb.org/3/genre/movie/list?language=en-US', options);
-    if (!response.ok) {
-      throw new Error('Failed to fetch genres');
-    }
-    const data = await response.json();
-    return data.genres; // Ini akan mengembalikan array genre dengan id dan nama
+    const response = await axiosInstance.get('/genre/movie/list');
+    return response.data.genres;
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching genres:', error);
     return [];
   }
 };
 
-//TVs
-export const fetchTopRatedTV = async () => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmZjA4OGM1MWFjYzg3YjlmMzdhYzdjMzFjNjM4NTVjYiIsIm5iZiI6MTcyNjc5NDk0OS4xNTQ5NjcsInN1YiI6IjY2ZWI4NmFkNTE2OGE4OTZlMTFmYzM0NyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.U56mgHHYAHbYdOKVj8s9NEb_RAZrnFxKcBTzYJQe6g4',
-    },
-  };
-
+// Movie
+export const fetchTopRatedMovies = async (page: number = 1) => {
   try {
-    const response = await fetch('https://api.themoviedb.org/3/tv/top_rated?language=en-US&page=1', options);
-    if (!response.ok) {
-      throw new Error('Failed to fetch movies');
-    }
-    const data = await response.json();
-    return data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-      title: tv.name,
-      id: tv.id,
-      poster_path: tv.poster_path,
-      genre_ids: tv.genre_ids,
-      vote_average: tv.vote_average,
-    }));
+    const response = await axiosInstance.get('/movie/top_rated', {
+      params: { page }
+    });
+    return {
+      results: response.data.results.map((movie: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: movie.title,
+        id: movie.id,
+        poster_path: movie.poster_path,
+        genre_ids: movie.genre_ids,
+        vote_average: movie.vote_average,
+      })),
+      total_pages: response.data.total_pages, // total pages returned by API
+      total_results: response.data.total_results, // Total number of movies returned by API
+    };
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error('Error fetching movies:', error);
+    return { results: [], total_pages: 1, total_results: 0 };
   }
 };
 
-// Fungsi untuk fetch TV Airing Today
-export const fetchAiringTodayTVShows = async () => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmZjA4OGM1MWFjYzg3YjlmMzdhYzdjMzFjNjM4NTVjYiIsIm5iZiI6MTcyNjc5NDk0OS4xNTQ5NjcsInN1YiI6IjY2ZWI4NmFkNTE2OGE4OTZlMTFmYzM0NyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.U56mgHHYAHbYdOKVj8s9NEb_RAZrnFxKcBTzYJQe6g4',
-    },
-  };
-  
+export const fetchNowPlayingMovies = async (page: number = 1) => {
   try {
-    const response = await fetch('https://api.themoviedb.org/3/tv/airing_today?language=en-US&page=1', options);
-    if (!response.ok) {
-      throw new Error('Failed to fetch movies');
-    }
-    const data = await response.json();
-    return data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
-      title: tv.name,
-      id: tv.id,
-      poster_path: tv.poster_path,
-      genre_ids: tv.genre_ids,
-      vote_average: tv.vote_average,
-    }));
+    const response = await axiosInstance.get('/movie/now_playing', {
+      params: { page }
+    });
+    return {
+      results: response.data.results.map((movie: { title: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: movie.title,
+        id: movie.id,
+        poster_path: movie.poster_path,
+        genre_ids: movie.genre_ids,
+        vote_average: movie.vote_average,
+      })),
+      total_pages: response.data.total_pages, // total pages returned by API
+      total_results: response.data.total_results, // Total number of movies returned by API
+    };
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error('Error fetching movies:', error);
+    return { results: [], total_pages: 1, total_results: 0 };
   }
 };
 
+// TV
+export const fetchTopRatedTV = async (page: number = 1) => {
+  try {
+    const response = await axiosInstance.get('/tv/top_rated', {
+      params: { page }
+    });
+    return {
+      results: response.data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: tv.name,  // Changed 'title' to 'name'
+        id: tv.id,
+        poster_path: tv.poster_path,
+        genre_ids: tv.genre_ids,
+        vote_average: tv.vote_average,
+      })),
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
+    };
+  } catch (error) {
+    console.error('Error fetching TV shows:', error);
+    return { results: [], total_pages: 1, total_results: 0 };
+  }
+};
+
+export const fetchAiringTodayTVShows = async (page: number = 1) => {
+  try {
+    const response = await axiosInstance.get('/tv/airing_today', {
+      params: { page }
+    });
+    return {
+      results: response.data.results.map((tv: { name: string; id: number; poster_path: string; genre_ids: number[]; vote_average: number }) => ({
+        title: tv.name,  // Changed 'title' to 'name'
+        id: tv.id,
+        poster_path: tv.poster_path,
+        genre_ids: tv.genre_ids,
+        vote_average: tv.vote_average,
+      })),
+      total_pages: response.data.total_pages,
+      total_results: response.data.total_results,
+    };
+  } catch (error) {
+    console.error('Error fetching TV shows:', error);
+    return { results: [], total_pages: 1, total_results: 0 };
+  }
+};
