@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 // import "../components/ShowsTable.css";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { fetchTopRatedMovies, fetchGenres } from "../api/apiConfig";
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
 import axios from "axios";
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 // import { colors } from "@mui/material";
 
 interface User {
@@ -17,20 +22,42 @@ interface User {
 
 const columnHelper = createColumnHelper<User>();
 
-const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: number) => void) => [
+const columns = (
+  genreMap: { [key: number]: string },
+  handleLike: (movieId: number) => void
+) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
-    cell: (info) => <img src={`https://image.tmdb.org/t/p/w200${info.getValue()}`} alt={info.row.original.title} style={{ height: '100px' }} />
+    cell: (info) => (
+      <img
+        src={`https://image.tmdb.org/t/p/w200${info.getValue()}`}
+        alt={info.row.original.title}
+        style={{ height: "100px" }}
+      />
+    ),
   }),
-  columnHelper.accessor("title", { header: () => "Title", cell: (info) => info.getValue() || "unknown" }),
+  columnHelper.accessor("title", {
+    header: () => "Title",
+    cell: (info) => info.getValue() || "unknown",
+  }),
   columnHelper.accessor("genre_ids", {
     header: () => "Genre",
-    cell: (info) =>{
-      const genres = info.getValue().map((id) => genreMap[id]).join(", ");
-      return genres || "unknown";
-    } 
+    cell: (info) => {
+      const genres = info
+        .getValue()
+        .map((id) => genreMap[id])
+        .filter(Boolean);
+
+      return genres.length > 0 ? genres.join(", ") : "Unknown";
+    },
   }),
-  columnHelper.accessor("vote_average", { header: () => "Rating", cell: (info) => info.getValue() }),
+  columnHelper.accessor("vote_average", {
+    header: () => "Rating",
+    cell: (info) => {
+      const rating = info.getValue();
+      return rating.toFixed(1);
+    },
+  }),
   columnHelper.accessor("like", {
     header: () => "Like",
     cell: (info) => {
@@ -45,7 +72,7 @@ const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: numb
   }),
 ];
 
-const MovieTable = () => {
+const MovieTableNowPlaying = () => {
   const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
@@ -57,10 +84,16 @@ const MovieTable = () => {
       try {
         setIsLoading(true);
         const fetchedGenres = await fetchGenres();
-        const genreMap = fetchedGenres.reduce((acc: { [key: number]: string }, genre: { id: number, name: string }) => {
-          acc[genre.id] = genre.name;
-          return acc;
-        }, {});
+        const genreMap = fetchedGenres.reduce(
+          (
+            acc: { [key: number]: string },
+            genre: { id: number; name: string }
+          ) => {
+            acc[genre.id] = genre.name;
+            return acc;
+          },
+          {}
+        );
         setGenres(genreMap);
 
         // Fetch the first page of top-rated movies
@@ -76,7 +109,7 @@ const MovieTable = () => {
 
   const fetchMovies = async (page: number) => {
     try {
-      const fetchedMovies = await fetchTopRatedMovies(page); // Pass page and limit 5 items
+      const fetchedMovies = await fetchNowPlayingMovies(page); // Pass page and limit 5 items
       setMovies(fetchedMovies.results); // Set only current page's results
       setTotalPages(fetchedMovies.total_pages); // Set total pages from API response
     } catch (error) {
@@ -119,22 +152,25 @@ const MovieTable = () => {
   };
 
   return (
-    <div style={{marginTop:"80px", marginBottom:"80px"}} >
-      <h2 >Top Rated Movies</h2>
+    <div>
+      <h2>Now Playing Movies</h2>
       {isLoading && <p>Loading...</p>}
-      <table  className="users-table"  >
-        <thead >
+      <table className="users-table">
+        <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th key={header.id} className="users-table-cell">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
                 </th>
               ))}
             </tr>
           ))}
         </thead>
-        <tbody >
+        <tbody>
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id}>
               {row.getVisibleCells().map((cell) => (
@@ -146,13 +182,18 @@ const MovieTable = () => {
           ))}
         </tbody>
       </table>
-      <div className="pagination-controls" >
-        <button onClick={prevPage} disabled={page === 1}> {'<'} </button>
+      <div className="pagination-controls">
+        <button onClick={prevPage} disabled={page === 1}>
+          {" "}
+          {"<"}{" "}
+        </button>
         <span>{`Page ${page} of ${totalPages}`}</span>
-        <button onClick={nextPage} disabled={page === totalPages}>{'>'}</button>
+        <button onClick={nextPage} disabled={page === totalPages}>
+          {">"}
+        </button>
       </div>
     </div>
   );
 };
 
-export default MovieTable;
+export default MovieTableNowPlaying;

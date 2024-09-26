@@ -12,6 +12,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod"; // Import zod
+
 import axiosInstance from "../api/axiosConfig"; // Import axiosInstance
 import LogoSection from "../components/logoSection"; // Import the new component
 
@@ -103,27 +104,30 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
 
   return (
     <React.Fragment>
-      <AppBar>
+      <AppBar sx={{ position:"fixed"}}>
         <Toolbar sx={{ backgroundColor: "#FECE04", animation: "fadeIn 0.5s" }}>
           {/* Use the new LogoSection component */}
           <LogoSection />
 
           {/* PILIHAN KATEGORI MOVIES & TV SHOWS */}
-          <Button sx={{ marginLeft: "55%", color: "#333" }} color="inherit" onClick={handleMoviesMenuClick}> Movies </Button>
+          <Button sx={{ marginLeft: "auto", color: "#333" }} color="inherit" onClick={handleMoviesMenuClick}> Movies </Button>
           <Menu anchorEl={movieAnchorEl} open={Boolean(movieAnchorEl)} onClose={() => setMovieAnchorEl(null)}>
             <MenuItem onClick={() => handleMoviesMenuClose("Top Rated Movies")}> Top Rated </MenuItem>
             <MenuItem onClick={() => handleMoviesMenuClose("Now Playing Movies")}> Now Playing </MenuItem>
           </Menu>
 
-          <Button sx={{ color: "#333", ml: "35px" }} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
+          <Button sx={{ color: "#333"}} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
           <Menu anchorEl={tvShowAnchorEl} open={Boolean(tvShowAnchorEl)} onClose={() => setTVShowAnchorEl(null)}>
             <MenuItem onClick={() => handleTVShowsMenuClose("Top Rated TV Shows")}> Top Rated </MenuItem>
             <MenuItem onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}> Airing Today </MenuItem>
           </Menu>
 
+          <Button sx={{ color: "#333"}} color="inherit" > Bookmark </Button>
+          
+
           {/* SEARCHBAR */}
           <Autocomplete
-            sx={{ mr: 2, marginLeft: "auto", width: "300px" }}
+            sx={{ mr: 2, ml: 2, width: "200px" }}
             freeSolo
             options={searchResults.map(
               (option: any) => option.title || option.name

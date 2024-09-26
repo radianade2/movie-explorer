@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import "../components/Bookmarked.css"; // Mengimpor file CSS
+import React, { useEffect, useState } from "react";
+import "../components/Dashboard.css"; // Mengimpor file CSS
 import {
   createColumnHelper,
   flexRender,
@@ -14,6 +14,7 @@ import {
   fetchGenres,
 } from "../api/apiConfig";
 import axios from "axios";
+import { Tabs, Tab, Container } from "@mui/material"; // Import Tabs and Tab components
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
@@ -48,7 +49,9 @@ const columns = (
   }),
   columnHelper.accessor("title", {
     header: () => "Title",
-    cell: (info) => <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>, // Make title bold
+    cell: (info) => (
+      <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>
+    ), // Make title bold
   }),
   columnHelper.accessor("genre_ids", {
     header: () => "Genre",
@@ -102,6 +105,7 @@ const MovieTable = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [tabIndex, setTabIndex] = useState(0); // State for managing the active tab
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -109,7 +113,10 @@ const MovieTable = () => {
         setIsLoading(true);
         const fetchedGenres = await fetchGenres();
         const genreMap = fetchedGenres.reduce(
-          (acc: { [key: number]: string }, genre: { id: number; name: string }) => {
+          (
+            acc: { [key: number]: string },
+            genre: { id: number; name: string }
+          ) => {
             acc[genre.id] = genre.name;
             return acc;
           },
@@ -150,6 +157,26 @@ const MovieTable = () => {
       setTotalPages(fetchedData.total_pages);
     } catch (error) {
       console.error("Error fetching data", error);
+    }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabIndex(newValue);
+    switch (newValue) {
+      case 0:
+        setCategory("top-rated-movies");
+        break;
+      case 1:
+        setCategory("now-playing-movies");
+        break;
+      case 2:
+        setCategory("top-rated-tv");
+        break;
+      case 3:
+        setCategory("airing-today-tv");
+        break;
+      default:
+        setCategory("top-rated-movies");
     }
   };
 
@@ -201,12 +228,36 @@ const MovieTable = () => {
     <div className="movie-table-container">
       <h2 className="table-header"> Movies and TV Shows </h2>
 
-      <div className="category-buttons">
-        <button onClick={() => setCategory("top-rated-movies")}>Top Rated Movies</button>
-        <button onClick={() => setCategory("now-playing-movies")}>Now Playing Movies</button>
-        <button onClick={() => setCategory("top-rated-tv")}>Top Rated TV Shows</button>
-        <button onClick={() => setCategory("airing-today-tv")}>Airing Today TV Shows</button>
-      </div>
+      {/* Material UI Tabs */}
+      <Tabs
+        value={tabIndex}
+        onChange={handleTabChange}
+        aria-label="movie and tv show categories"
+        variant="scrollable"
+        scrollButtons="auto"
+        centered
+        sx={{
+          // Custom styles untuk tabs
+          ".MuiTab-root": {
+            fontSize: "0.8rem", // font size semua tabs
+            color: "#9e9e9e", // Default color (custom gray)
+          },
+          ".Mui-selected": {
+            color: "#FECE04", // Custom color untuk selected tab
+            fontWeight: "bold", // Bold font untuk selected tab
+          },
+          ".MuiTabs-indicator": {
+            backgroundColor: "#FECE04", // Custom indicator color
+          },
+
+          mb: 2,
+        }} // Color of the indicator (underline)
+      >
+        <Tab label="Top Rated Movies" />
+        <Tab label="Now Playing Movies" />
+        <Tab label="Top Rated TV Shows" />
+        <Tab label="Airing Today TV Shows" />
+      </Tabs>
 
       {isLoading && <p>Loading...</p>}
       <table className="users-table">
@@ -215,7 +266,10 @@ const MovieTable = () => {
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th key={header.id}>
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
                 </th>
               ))}
             </tr>
@@ -238,7 +292,10 @@ const MovieTable = () => {
         <button onClick={prevPage} disabled={page === 1}>
           {"<"}
         </button>
-        <span>{`Page ${page} of ${totalPages}`}</span>
+        <span>
+          {" "}
+          Page {page} of {totalPages}{" "}
+        </span>
         <button onClick={nextPage} disabled={page === totalPages}>
           {">"}
         </button>

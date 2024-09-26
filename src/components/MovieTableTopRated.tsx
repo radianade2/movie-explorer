@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
+// import "../components/ShowsTable.css";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  fetchAiringTodayTVShows,
-  fetchGenres,
-} from "../api/apiConfig";
+import { fetchTopRatedMovies, fetchGenres } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+// import { colors } from "@mui/material";
 
 interface User {
   poster_path: string;
@@ -25,7 +24,7 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = (
   genreMap: { [key: number]: string },
-  handleLike: (tvId: number) => void
+  handleLike: (movieId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
@@ -47,31 +46,34 @@ const columns = (
       const genres = info
         .getValue()
         .map((id) => genreMap[id])
-        .join(", ");
-      return genres || "unknown";
+        .filter(Boolean);
+
+      return genres.length > 0 ? genres.join(", ") : "Unknown";
     },
   }),
   columnHelper.accessor("vote_average", {
     header: () => "Rating",
-    cell: (info) =>
-      info.getValue() !== undefined ? info.getValue() : "unknown",
+    cell: (info) => {
+      const rating = info.getValue();
+      return rating.toFixed(1);
+    },
   }),
   columnHelper.accessor("like", {
     header: () => "Like",
     cell: (info) => {
-      const tv = info.row.original;
+      const movie = info.row.original;
       return (
         <div>
-          <ThumbUpIcon onClick={() => handleLike(tv.id)} />
-          <span>{tv.like}</span>
+          <ThumbUpIcon onClick={() => handleLike(movie.id)} />
+          <span>{movie.like}</span>
         </div>
       );
     },
   }),
 ];
 
-const TVShowTable = () => {
-  const [tvShows, setTV] = useState<User[]>([]);
+const MovieTableTopRated = () => {
+  const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
   const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
@@ -94,8 +96,8 @@ const TVShowTable = () => {
         );
         setGenres(genreMap);
 
-        // Fetch the first page of top-rated tv shows
-        await fetchTV(page);
+        // Fetch the first page of top-rated movies
+        await fetchMovies(page);
       } catch (error) {
         console.error("Error fetching data", error);
       } finally {
@@ -105,32 +107,32 @@ const TVShowTable = () => {
     fetchAllData();
   }, [page]);
 
-  const fetchTV = async (page: number) => {
+  const fetchMovies = async (page: number) => {
     try {
-      const fetchedTV = await fetchAiringTodayTVShows(page); // Pass page and limit 5 items
-      setTV(fetchedTV.results); // Set only current page's results
-      setTotalPages(fetchedTV.total_pages); // Set total pages from API response
+      const fetchedMovies = await fetchTopRatedMovies(page); // Pass page and limit 5 items
+      setMovies(fetchedMovies.results); // Set only current page's results
+      setTotalPages(fetchedMovies.total_pages); // Set total pages from API response
     } catch (error) {
-      console.error("Error fetching TV show", error);
+      console.error("Error fetching movies", error);
     }
   };
 
-  const handleLike = async (tvId: number) => {
+  const handleLike = async (movieId: number) => {
     try {
-      const response = await axios.post(`/api/likes/${tvId}`);
+      const response = await axios.post(`/api/likes/${movieId}`);
       const updatedLikes = response.data.like_count;
-      setTV((prevTV) =>
-        prevTV.map((tv) =>
-          tv.id === tvId ? { ...tv, like: updatedLikes } : tv
+      setMovies((prevMovies) =>
+        prevMovies.map((movie) =>
+          movie.id === movieId ? { ...movie, like: updatedLikes } : movie
         )
       );
     } catch (error) {
-      console.error("Error liking the tv show", error);
+      console.error("Error liking the movie", error);
     }
   };
 
   const table = useReactTable({
-    data: tvShows,
+    data: movies,
     columns: columns(genres, handleLike),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // Enable manual pagination
@@ -150,8 +152,8 @@ const TVShowTable = () => {
   };
 
   return (
-    <div style={{ marginTop: "80px", marginBottom: "80px" }}>
-      <h2>Airing Today TV Shows</h2>
+    <div>
+      <h2>Top Rated Movies</h2>
       {isLoading && <p>Loading...</p>}
       <table className="users-table">
         <thead>
@@ -194,4 +196,4 @@ const TVShowTable = () => {
   );
 };
 
-export default TVShowTable;
+export default MovieTableTopRated;

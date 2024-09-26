@@ -1,0 +1,23 @@
+import React from "react";
+import Grid from "@mui/material/Grid2";
+import Dashboard from "../components/Dashboard";
+
+const DashboardPage: React.FC = () => {
+  return (
+    <Grid container direction="column" sx={{ minHeight: "100vh" }}>
+      <Grid
+        sx={{
+          flexGrow: 1,
+          padding: "50px",
+          mt: "30px",
+          mb: "30px",
+          alignContent: "center",
+        }}
+      >
+        <Dashboard />
+      </Grid>
+    </Grid>
+  );
+};
+
+export default DashboardPage;
