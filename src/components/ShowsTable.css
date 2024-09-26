@@ -5,7 +5,7 @@
   border-collapse: collapse;
   /*background-color: #333; /* Set background color to #333 */
   /*color: white; /* Set text color to white */
-  /*border-radius: 5px; /* Add border-radius to the table */
+  border-radius: 10px; /* Add border-radius to the table */
  /* overflow: hidden; /* Ensure the rounded corners are visible */
   /*margin-top: "20px";*/
   margin-bottom: "20px";

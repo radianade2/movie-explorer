@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../components/Bookmarked.css"; // Mengimpor file CSS
+import "../components/Dashboard.css"; // Mengimpor file CSS
 import {
   createColumnHelper,
   flexRender,
@@ -14,7 +14,7 @@ import {
   fetchGenres,
 } from "../api/apiConfig";
 import axios from "axios";
-import { Tabs, Tab } from "@mui/material"; // Import Tabs and Tab components
+import { Tabs, Tab, Container } from "@mui/material"; // Import Tabs and Tab components
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";

@@ -5,10 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  fetchAiringTodayTVShows,
-  fetchGenres,
-} from "../api/apiConfig";
+import { fetchGenres, fetchTopRatedTV } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 
@@ -47,14 +44,17 @@ const columns = (
       const genres = info
         .getValue()
         .map((id) => genreMap[id])
-        .join(", ");
-      return genres || "unknown";
+        .filter(Boolean);
+
+      return genres.length > 0 ? genres.join(", ") : "Unknown";
     },
   }),
   columnHelper.accessor("vote_average", {
     header: () => "Rating",
-    cell: (info) =>
-      info.getValue() !== undefined ? info.getValue() : "unknown",
+    cell: (info) => {
+      const rating = info.getValue();
+      return rating.toFixed(1);
+    },
   }),
   columnHelper.accessor("like", {
     header: () => "Like",
@@ -70,7 +70,7 @@ const columns = (
   }),
 ];
 
-const TVShowTable2 = () => {
+const TVShowTableTopRated = () => {
   const [tvShows, setTV] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
@@ -107,7 +107,7 @@ const TVShowTable2 = () => {
 
   const fetchTV = async (page: number) => {
     try {
-      const fetchedTV = await fetchAiringTodayTVShows(page); // Pass page and limit 5 items
+      const fetchedTV = await fetchTopRatedTV(page); // Pass page and limit 5 items
       setTV(fetchedTV.results); // Set only current page's results
       setTotalPages(fetchedTV.total_pages); // Set total pages from API response
     } catch (error) {
@@ -150,8 +150,8 @@ const TVShowTable2 = () => {
   };
 
   return (
-    <div style={{ marginTop: "80px", marginBottom: "80px" }}>
-      <h2>Airing Today TV Shows</h2>
+    <div>
+      <h2>Top Rated TV Shows</h2>
       {isLoading && <p>Loading...</p>}
       <table className="users-table">
         <thead>
@@ -194,4 +194,4 @@ const TVShowTable2 = () => {
   );
 };
 
-export default TVShowTable2;
+export default TVShowTableTopRated;
