@@ -62,7 +62,7 @@ const columns = (
       const tv = info.row.original;
       return (
         <div>
-          <ThumbUpIcon onClick={() => handleLike(tv.id)} />
+          <ThumbUpIcon/>
           <span>{tv.like}</span>
         </div>
       );
