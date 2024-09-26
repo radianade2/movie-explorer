@@ -77,6 +77,17 @@ const TVShowTableTopRated = () => {
   const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper function untuk load likes dari localStorage
+  const loadLikesFromLocalStorage = () => {
+    const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
+    return savedLikes;
+  };
+
+  // Helper function untuk menyimpan likes ke localStorage
+  const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
+    localStorage.setItem("likes", JSON.stringify(likes));
+  };
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -94,7 +105,7 @@ const TVShowTableTopRated = () => {
         );
         setGenres(genreMap);
 
-        // Fetch the first page of top-rated tv shows
+        // Fetching halaman pertama dari top-rated tv shows
         await fetchTV(page);
       } catch (error) {
         console.error("Error fetching data", error);
@@ -108,25 +119,33 @@ const TVShowTableTopRated = () => {
   const fetchTV = async (page: number) => {
     try {
       const fetchedTV = await fetchTopRatedTV(page); // Pass page and limit 5 items
-      setTV(fetchedTV.results); // Set only current page's results
+      const savedLikes = loadLikesFromLocalStorage();
+
+      // Update movies dengan likes dari localStorage
+      const tvWithLikes = fetchedTV.results.map((tvShows: User) => ({
+        ...tvShows,
+        like: savedLikes[tvShows.id] !== undefined ? savedLikes[tvShows.id] : 0, // Menggunakan like yang sudah ada atau default ke 0
+      }));
+
+      setTV(tvWithLikes); 
       setTotalPages(fetchedTV.total_pages); // Set total pages from API response
     } catch (error) {
-      console.error("Error fetching TV show", error);
+      console.error("Error fetching movies", error);
     }
   };
 
-  const handleLike = async (tvId: number) => {
-    try {
-      const response = await axios.post(`/api/likes/${tvId}`);
-      const updatedLikes = response.data.like_count;
-      setTV((prevTV) =>
-        prevTV.map((tv) =>
-          tv.id === tvId ? { ...tv, like: updatedLikes } : tv
-        )
-      );
-    } catch (error) {
-      console.error("Error liking the tv show", error);
-    }
+
+  const handleLike = (tvId: number) => {
+    // Update like count untuk the movie
+    const updatedTV = tvShows.map((tvShows) =>
+      tvShows.id === tvId ? { ...tvShows, like: tvShows.like ? 0 : 1 } : tvShows
+    );
+    setTV(updatedTV);
+
+    // Update localStorage
+    const savedLikes = loadLikesFromLocalStorage();
+    savedLikes[tvId] = updatedTV.find((tv) => tv.id === tvId)?.like || 0;
+    saveLikesToLocalStorage(savedLikes);
   };
 
   const table = useReactTable({
