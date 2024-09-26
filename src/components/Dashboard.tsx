@@ -13,14 +13,12 @@ import {
   fetchTopRatedTV,
   fetchGenres,
 } from "../api/apiConfig";
-import axios from "axios";
-import { Tabs, Tab, Container } from "@mui/material"; // Import Tabs and Tab components
+import { Tabs, Tab, IconButton } from "@mui/material"; // Import Tabs and Tab components
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import IconButton from "@mui/material/IconButton";
 
-interface User {
+interface Movie {
   poster_path: string;
   title: string;
   genre_ids: number[];
@@ -30,49 +28,41 @@ interface User {
   isBookmarked: boolean;
 }
 
-const columnHelper = createColumnHelper<User>();
+const columnHelper = createColumnHelper<Movie>();
 
+// Function to create table columns
 const columns = (
   genreMap: { [key: number]: string },
   handleLike: (movieId: number) => void,
   handleBookmark: (movieId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
-    header: () => "Poster",
+    header: "Poster",
     cell: (info) => (
       <img
         src={`https://image.tmdb.org/t/p/w200${info.getValue()}`}
         alt={info.row.original.title}
-        style={{ height: "100px", borderRadius: "8px" }} // Rounded edges for more style
+        style={{ height: "100px", borderRadius: "8px" }}
       />
     ),
   }),
   columnHelper.accessor("title", {
-    header: () => "Title",
-    cell: (info) => (
-      <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>
-    ), // Make title bold
+    header: "Title",
+    cell: (info) => <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>,
   }),
   columnHelper.accessor("genre_ids", {
-    header: () => "Genre",
+    header: "Genre",
     cell: (info) => {
-      const genres = info
-        .getValue()
-        .map((id) => genreMap[id])
-        .filter(Boolean);
-
+      const genres = info.getValue().map((id) => genreMap[id]).filter(Boolean);
       return genres.length > 0 ? genres.join(", ") : "Unknown";
     },
   }),
   columnHelper.accessor("vote_average", {
-    header: () => "Rating",
-    cell: (info) => {
-      const rating = info.getValue();
-      return rating.toFixed(1);
-    },
+    header: "Rating",
+    cell: (info) => info.getValue().toFixed(1),
   }),
   columnHelper.accessor("like", {
-    header: () => "Like",
+    header: "Like",
     cell: (info) => {
       const movie = info.row.original;
       return (
@@ -86,7 +76,7 @@ const columns = (
     },
   }),
   columnHelper.accessor("isBookmarked", {
-    header: () => "Bookmark",
+    header: "Bookmark",
     cell: (info) => {
       const movie = info.row.original;
       return (
@@ -99,68 +89,69 @@ const columns = (
 ];
 
 const MovieTable = () => {
-  const [movies, setMovies] = useState<User[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [category, setCategory] = useState("top-rated-movies");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [tabIndex, setTabIndex] = useState(0); // State for managing the active tab
+  const [tabIndex, setTabIndex] = useState(0);
 
   useEffect(() => {
     const fetchAllData = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
+        // Fetch genres
         const fetchedGenres = await fetchGenres();
         const genreMap = fetchedGenres.reduce(
-          (
-            acc: { [key: number]: string },
-            genre: { id: number; name: string }
-          ) => {
+          (acc: { [key: number]: string }, genre: { id: number; name: string }) => {
             acc[genre.id] = genre.name;
             return acc;
           },
           {}
         );
         setGenres(genreMap);
-
-        await fetchMoviesOrShows(category, page);
+    
+        // Fetch movies or TV shows
+        const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
+    
+        const fetchedData = await fetchMoviesOrShows(category, page); // Assuming fetchMoviesOrShows returns an object
+        const fetchedMovies = fetchedData.results; // Extract the array of movies
+        const totalPages = fetchedData.total_pages; // Extract total pages for pagination
+    
+        const moviesWithLikes = fetchedMovies.map((movie: Movie) => ({
+          ...movie,
+          like: savedLikes[movie.id] !== undefined ? savedLikes[movie.id] : movie.like || 0, // Pastikan nilai awalnya angka atau boolean
+        }));
+    
+        setMovies(moviesWithLikes); // Set the actual movies array
+        setTotalPages(totalPages); // Set total pages for pagination
       } catch (error) {
         console.error("Error fetching data", error);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchAllData();
   }, [category, page]);
 
   const fetchMoviesOrShows = async (category: string, page: number) => {
-    try {
-      let fetchedData;
-      switch (category) {
-        case "top-rated-movies":
-          fetchedData = await fetchTopRatedMovies(page);
-          break;
-        case "now-playing-movies":
-          fetchedData = await fetchNowPlayingMovies(page);
-          break;
-        case "top-rated-tv":
-          fetchedData = await fetchTopRatedTV(page);
-          break;
-        case "airing-today-tv":
-          fetchedData = await fetchAiringTodayTVShows(page);
-          break;
-        default:
-          fetchedData = await fetchTopRatedMovies(page);
-      }
-      setMovies(fetchedData.results);
-      setTotalPages(fetchedData.total_pages);
-    } catch (error) {
-      console.error("Error fetching data", error);
+    switch (category) {
+      case "top-rated-movies":
+        return await fetchTopRatedMovies(page);
+      case "now-playing-movies":
+        return await fetchNowPlayingMovies(page);
+      case "top-rated-tv":
+        return await fetchTopRatedTV(page);
+      case "airing-today-tv":
+        return await fetchAiringTodayTVShows(page);
+      default:
+        return await fetchTopRatedMovies(page);
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     switch (newValue) {
       case 0:
@@ -180,21 +171,22 @@ const MovieTable = () => {
     }
   };
 
-  const handleLike = async (movieId: number) => {
-    try {
-      const response = await axios.post(`/api/likes/${movieId}`);
-      const updatedLikes = response.data.like_count;
-      setMovies((prevMovies) =>
-        prevMovies.map((movie) =>
-          movie.id === movieId ? { ...movie, like: updatedLikes } : movie
-        )
-      );
-    } catch (error) {
-      console.error("Error liking the movie", error);
-    }
+  const handleLike = (movieId: number) => {
+    setMovies((prevMovies) =>
+      prevMovies.map((movie) =>
+        movie.id === movieId
+          ? { ...movie, like: movie.like + 1 }
+          : movie
+      )
+    );
+
+    // Update likes in localStorage
+    const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
+    savedLikes[movieId] = (savedLikes[movieId] || 0) + 1;
+    localStorage.setItem("likes", JSON.stringify(savedLikes));
   };
 
-  const handleBookmark = async (movieId: number) => {
+  const handleBookmark = (movieId: number) => {
     setMovies((prevMovies) =>
       prevMovies.map((movie) =>
         movie.id === movieId
@@ -212,21 +204,12 @@ const MovieTable = () => {
     pageCount: totalPages,
   });
 
-  const nextPage = () => {
-    if (page < totalPages) {
-      setPage((prev) => prev + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (page > 1) {
-      setPage((prev) => prev - 1);
-    }
-  };
+  const nextPage = () => page < totalPages && setPage(page + 1);
+  const prevPage = () => page > 1 && setPage(page - 1);
 
   return (
     <div className="movie-table-container">
-      <h2 className="table-header"> Movies and TV Shows </h2>
+      <h2 className="table-header">Movies and TV Shows</h2>
 
       {/* Material UI Tabs */}
       <Tabs
@@ -237,21 +220,11 @@ const MovieTable = () => {
         scrollButtons="auto"
         centered
         sx={{
-          // Custom styles untuk tabs
-          ".MuiTab-root": {
-            fontSize: "0.8rem", // font size semua tabs
-            color: "#9e9e9e", // Default color (custom gray)
-          },
-          ".Mui-selected": {
-            color: "#FECE04", // Custom color untuk selected tab
-            fontWeight: "bold", // Bold font untuk selected tab
-          },
-          ".MuiTabs-indicator": {
-            backgroundColor: "#FECE04", // Custom indicator color
-          },
-
+          ".MuiTab-root": { fontSize: "0.8rem", color: "#9e9e9e" },
+          ".Mui-selected": { color: "#FECE04", fontWeight: "bold" },
+          ".MuiTabs-indicator": { backgroundColor: "#FECE04" },
           mb: 2,
-        }} // Color of the indicator (underline)
+        }}
       >
         <Tab label="Top Rated Movies" />
         <Tab label="Now Playing Movies" />
@@ -259,45 +232,47 @@ const MovieTable = () => {
         <Tab label="Airing Today TV Shows" />
       </Tabs>
 
-      {isLoading && <p>Loading...</p>}
-      <table className="users-table">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id}>
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : (
+        <table className="users-table">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <div className="pagination-controls">
         <button onClick={prevPage} disabled={page === 1}>
-          {"<"}
+          Previous
         </button>
         <span>
-          {" "}
-          Page {page} of {totalPages}{" "}
+          Page {page} of {totalPages}
         </span>
         <button onClick={nextPage} disabled={page === totalPages}>
-          {">"}
+          Next
         </button>
       </div>
     </div>

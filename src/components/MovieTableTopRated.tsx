@@ -79,6 +79,17 @@ const MovieTableTopRated = () => {
   const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper function untuk load likes dari localStorage
+  const loadLikesFromLocalStorage = () => {
+    const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
+    return savedLikes;
+  };
+
+  // Helper function untuk menyimpan likes ke localStorage
+  const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
+    localStorage.setItem("likes", JSON.stringify(likes));
+  };
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -96,7 +107,7 @@ const MovieTableTopRated = () => {
         );
         setGenres(genreMap);
 
-        // Fetch the first page of top-rated movies
+        // Fetching halaman pertama dari top-rated movies
         await fetchMovies(page);
       } catch (error) {
         console.error("Error fetching data", error);
@@ -110,25 +121,32 @@ const MovieTableTopRated = () => {
   const fetchMovies = async (page: number) => {
     try {
       const fetchedMovies = await fetchTopRatedMovies(page); // Pass page and limit 5 items
-      setMovies(fetchedMovies.results); // Set only current page's results
-      setTotalPages(fetchedMovies.total_pages); // Set total pages from API response
+      const savedLikes = loadLikesFromLocalStorage();
+
+      // Update movies dengan likes dari localStorage
+      const moviesWithLikes = fetchedMovies.results.map((movie: User) => ({
+        ...movie,
+        like: savedLikes[movie.id] !== undefined ? savedLikes[movie.id] : 0, // Menggunakan like yang sudah ada atau default ke 0
+      }));
+
+      setMovies(moviesWithLikes); 
+      setTotalPages(fetchedMovies.total_pages); // Set total pages dari API response
     } catch (error) {
       console.error("Error fetching movies", error);
     }
   };
 
-  const handleLike = async (movieId: number) => {
-    try {
-      const response = await axios.post(`/api/likes/${movieId}`);
-      const updatedLikes = response.data.like_count;
-      setMovies((prevMovies) =>
-        prevMovies.map((movie) =>
-          movie.id === movieId ? { ...movie, like: updatedLikes } : movie
-        )
-      );
-    } catch (error) {
-      console.error("Error liking the movie", error);
-    }
+  const handleLike = (movieId: number) => {
+    // Update like count dari movie
+    const updatedMovies = movies.map((movie) =>
+      movie.id === movieId ? { ...movie, like: movie.like ? 0 : 1 } : movie
+    );
+    setMovies(updatedMovies);
+
+    // Update localStorage
+    const savedLikes = loadLikesFromLocalStorage();
+    savedLikes[movieId] = updatedMovies.find((movie) => movie.id === movieId)?.like || 0;
+    saveLikesToLocalStorage(savedLikes);
   };
 
   const table = useReactTable({
