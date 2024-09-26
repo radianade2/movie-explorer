@@ -1,134 +1,221 @@
-import React, { useEffect, useState } from "react";
-import "../components/ShowsTable.css";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { fetchNowPlayingMovies, fetchTopRatedMovies, fetchGenres } from "../api/apiConfig";
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import axios from "axios";
+// ini rencananya untuk card film yang nanti bisa ada rincian film, tombol like, dan tombol bookmark di card film-nya. tapi belum selesai
+// src/components/Movies
+import React, { useEffect, useState, useRef } from 'react';
+import { Card, CardContent, CardMedia, Typography, Box, IconButton, Button } from '@mui/material';
+// import Grid from '@mui/material/Grid2';
+import { BookmarkBorder, Bookmark, ArrowForwardIos, ArrowBackIos } from '@mui/icons-material';
+import {
+  fetchTopRatedMovies,
+  fetchNowPlayingMovies,
+  fetchTopRatedTV,
+  fetchAiringTodayTVShows
+} from '../api/apiConfig';
 
-export type User = {
-  poster_path: string;
-  title: string;
-  genre_ids: number[];
-  vote_average: number;
-  like: number;
-  id: number;
-};
+const Dashboard: React.FC = () => {
+  const [topRatedMovies, setTopRatedMovies] = useState([]);
+  const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+  const [topRatedTVShows, setTopRatedTVShows] = useState([]);
+  const [airingTodayTVShows, setAiringTodayTVShows] = useState([]);
 
-const columnHelper = createColumnHelper<User>();
-
-const columns = (genreMap: { [key: number]: string }, handleLike: (movieId: number) => void) => [
-  columnHelper.accessor("poster_path", {
-    header: () => "Poster",
-    cell: (info) => <img src={`https://image.tmdb.org/t/p/w200${info.getValue()}`} alt={info.row.original.title} style={{ height: '100px' }} />
-  }),
-  columnHelper.accessor("title", { header: () => "Title", cell: (info) => info.getValue() }),
-  columnHelper.accessor("genre_ids", {
-    header: () => "Genre",
-    cell: (info) => info.getValue().map((id) => genreMap[id]).join(", ")
-  }),
-  columnHelper.accessor("vote_average", { header: () => "Rating", cell: (info) => info.getValue() }),
-  columnHelper.accessor("like", {
-    header: () => "Like",
-    cell: (info) => {
-      const movie = info.row.original;
-      return (
-        <div>
-          <ThumbUpIcon onClick={() => handleLike(movie.id)} />
-          <span>{movie.like}</span>
-        </div>
-      );
-    },
-  }),
-];
-
-interface MovieTableProps {
-  selectedCategory: string;
-}
-
-const MovieTable: React.FC<MovieTableProps> = ({ selectedCategory }) => {
-  const [nowPlayingMovies, setNowPlayingMovies] = useState<User[]>([]);
-  const [topRatedMovies, setTopRatedMovies] = useState<User[]>([]);
-  const [genres, setGenres] = useState<{ [key: number]: string }>({});
-  const [visibleNowPlayingCount, setVisibleNowPlayingCount] = useState(5);
-  const [visibleTopRatedCount, setVisibleTopRatedCount] = useState(5);
+  const [bookmarked, setBookmarked] = useState<number[]>([]);
+  const scrollRefs = {
+    topRated: useRef<HTMLDivElement>(null),
+    nowPlaying: useRef<HTMLDivElement>(null),
+    airingToday: useRef<HTMLDivElement>(null),
+    topRatedTV: useRef<HTMLDivElement>(null),
+  }; // create ref for each category
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        const fetchedNowPlayingMovies = await fetchNowPlayingMovies();
-        const fetchedTopRatedMovies = await fetchTopRatedMovies();
-        const fetchedGenres = await fetchGenres();
-        const genreMap = fetchedGenres.reduce((acc: { [key: number]: string }, genre: { id: number, name: string }) => {
-          acc[genre.id] = genre.name;
-          return acc;
-        }, {});
-        setNowPlayingMovies(fetchedNowPlayingMovies);
-        setTopRatedMovies(fetchedTopRatedMovies);
-        setGenres(genreMap);
-      } catch (error) {
-        console.error("Error fetching data", error);
-      }
+    const loadData = async () => {
+      const topRated = await fetchTopRatedMovies();
+      const nowPlaying = await fetchNowPlayingMovies();
+      const topRatedTV = await fetchTopRatedTV();
+      const airingTodayTV = await fetchAiringTodayTVShows();
+
+      setTopRatedMovies(topRated.results);
+      setNowPlayingMovies(nowPlaying.results);
+      setTopRatedTVShows(topRatedTV.results);
+      setAiringTodayTVShows(airingTodayTV.results);
     };
-    fetchAllData();
+
+    loadData();
   }, []);
 
-  const handleLike = async (movieId: number) => {
-    try {
-      const response = await axios.post(`/api/likes/${movieId}`);
-      const updatedLikes = response.data.like_count;
-      setNowPlayingMovies((prevMovies) =>
-        prevMovies.map((movie) =>
-          movie.id === movieId ? { ...movie, like: updatedLikes } : movie
-        )
-      );
-    } catch (error) {
-      console.error("Error liking the movie", error);
+  const handleScroll = (direction: string, category: string) => {
+    const scrollContainer = scrollRefs[category].current;
+    if (scrollContainer) {
+      const scrollAmount = direction === 'right' ? scrollContainer.scrollLeft + 300 : scrollContainer.scrollLeft - 300;
+      scrollContainer.scrollTo({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
-  // Choose the correct data based on selectedCategory
-  const moviesToDisplay = selectedCategory === "Now Playing Movies" ? nowPlayingMovies : topRatedMovies;
-  const table = useReactTable({
-    data: moviesToDisplay.slice(0, selectedCategory === "Now Playing Movies" ? visibleNowPlayingCount : visibleTopRatedCount),
-    columns: columns(genres, handleLike),
-    getCoreRowModel: getCoreRowModel()
-  });
+  const handleBookmarkToggle = (id: number) => {
+    setBookmarked((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((movieId) => movieId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const renderMoviesAndShows = (data: any[], category: string) => {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+        <IconButton
+          onClick={() => handleScroll('left', category)}
+          sx={{
+            position: 'absolute',
+            left: -40,
+            zIndex: 1,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+            },
+          }}
+        >
+          <ArrowBackIos />
+        </IconButton>
+
+        <Box
+          ref={scrollRefs[category]} // assign the correct ref
+          sx={{
+            display: 'flex',
+            overflowX: 'auto',
+            scrollBehavior: 'smooth',
+            width: '100%',
+            padding: '10px 0',
+          }}
+        >
+          {data.map((item) => (
+            <Card
+              key={item.id}
+              sx={{
+                minWidth: 200,
+                margin: '0 10px',
+                flexShrink: 0,
+                position: 'relative',
+                '&:hover .overlay': {
+                  opacity: 1,
+                },
+              }}
+            >
+              <CardMedia
+                component="img"
+                alt={item.title}
+                image={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                sx={{ height: 250, width: '100%', objectFit: 'cover' }}
+              />
+              <Box
+                className="overlay"
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  opacity: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  transition: 'opacity 0.3s ease',
+                }}
+              >
+                <Typography variant="h6" sx={{ marginBottom: '10px' }}>
+                  {item.title}
+                </Typography>
+                <Typography variant="body2" sx={{ marginBottom: '10px' }}>
+                  {item.release_date ? item.release_date.substring(0, 4) : 'N/A'}
+                </Typography>
+                <Button variant="contained" sx={{ backgroundColor: '#fff', color: '#000', marginBottom: '10px' }}>
+                  Cuplikan
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{
+                    backgroundColor: '#fff',
+                    color: '#000',
+                  }}
+                >
+                  Opsi menonton
+                </Button>
+              </Box>
+
+              <IconButton
+                onClick={() => handleBookmarkToggle(item.id)}
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                  },
+                }}
+              >
+                {bookmarked.includes(item.id) ? <Bookmark /> : <BookmarkBorder />}
+              </IconButton>
+              <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '1rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {item.title}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+
+        <IconButton
+          onClick={() => handleScroll('right', category)}
+          sx={{
+            position: 'absolute',
+            right: -40,
+            zIndex: 1,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 1)',
+            },
+          }}
+        >
+          <ArrowForwardIos />
+        </IconButton>
+      </Box>
+    );
+  };
 
   return (
-    <div>
-      <h2>{selectedCategory}</h2>
-      <table className="users-table">
-        <thead>
-          {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <th key={header.id} className="users-table-cell">{flexRender(header.column.columnDef.header, header.getContext())}</th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map(row => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map(cell => (
-                <td key={cell.id} className="users-table-cell">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {selectedCategory === "Now Playing Movies" && visibleNowPlayingCount < nowPlayingMovies.length && (
-        <button onClick={() => setVisibleNowPlayingCount(prev => Math.min(prev + 5, nowPlayingMovies.length))}>
-          Load More
-        </button>
-      )}
-      {selectedCategory === "Top Rated Movies" && visibleTopRatedCount < topRatedMovies.length && (
-        <button onClick={() => setVisibleTopRatedCount(prev => Math.min(prev + 5, topRatedMovies.length))}>
-          Load More
-        </button>
-      )}
-    </div>
+    <Box sx={{ padding: 2 }}>
+      <Typography variant="h5" gutterBottom>
+        Top Rated Movies
+      </Typography>
+      {renderMoviesAndShows(topRatedMovies, 'topRated')}
+
+      <Typography variant="h5" gutterBottom sx={{ marginTop: 4 }}>
+        Now Playing Movies
+      </Typography>
+      {renderMoviesAndShows(nowPlayingMovies, 'nowPlaying')}
+
+      <Typography variant="h5" gutterBottom sx={{ marginTop: 4 }}>
+        Airing Today TV Shows
+      </Typography>
+      {renderMoviesAndShows(airingTodayTVShows, 'airingToday')}
+
+      <Typography variant="h5" gutterBottom sx={{ marginTop: 4 }}>
+        Top Rated TV Shows
+      </Typography>
+      {renderMoviesAndShows(topRatedTVShows, 'topRatedTV')}
+    </Box>
   );
 };
 
-export default MovieTable;
+export default Dashboard;

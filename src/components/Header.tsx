@@ -2,18 +2,19 @@ import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
-  Typography,
-  Menu,
-  MenuItem,
   TextField,
   InputAdornment,
   Button,
+  Menu,
+  MenuItem,
   Autocomplete,
 } from "@mui/material";
-import LocalMoviesIcon from "@mui/icons-material/LocalMovies";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod"; // Import zod
+
+import axiosInstance from "../api/axiosConfig"; // Import axiosInstance
+import LogoSection from "../components/logoSection"; // Import the new component
 
 interface Props {
   onCategorySelect: (category: string) => void;
@@ -31,8 +32,8 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
   const [searchError, setSearchError] = useState<string | null>(null); // State for error message
 
   const navigate = useNavigate();
-  const apiKey = "ff088c51acc87b9f37ac7c31c63855cb";
 
+  // PILIHAN KATEGORI MOVIES
   const handleMoviesMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setMovieAnchorEl(event.currentTarget);
   };
@@ -47,6 +48,7 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
     }
   };
 
+  // PILIHAN KATEGORI TV
   const handleTVShowsMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setTVShowAnchorEl(event.currentTarget);
   };
@@ -64,6 +66,7 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
     onCategorySelect(category);
   };
 
+  // SEARCHBAR
   const handleSearchChange = async (newInputValue: string) => {
     setSearchQuery(newInputValue);
 
@@ -73,11 +76,14 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
       setSearchError(null); // Reset error if valid
 
       if (newInputValue.length > 2) {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&language=en-US&query=${newInputValue}&page=1&include_adult=false`
-        );
-        const data = await response.json();
-        setSearchResults(data.results);
+        const response = await axiosInstance.get("/search/multi", {
+          params: {
+            query: newInputValue,
+            page: 1,
+            include_adult: false,
+          },
+        });
+        setSearchResults(response.data.results);
       } else {
         setSearchResults([]);
       }
@@ -98,61 +104,27 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
 
   return (
     <React.Fragment>
-      <AppBar>
+      <AppBar sx={{ position:"fixed"}}>
         <Toolbar sx={{ backgroundColor: "#FECE04", animation: "fadeIn 0.5s" }}>
-          <LocalMoviesIcon sx={{ color: "#333" }} />
-          <Typography sx={{ marginLeft: "10px", color: "#333" }}>
-            Cinemaku
-          </Typography>
+          {/* Use the new LogoSection component */}
+          <LogoSection />
 
-          <Button
-            sx={{ marginLeft: "auto", color: "#333" }}
-            color="inherit"
-            onClick={handleMoviesMenuClick}
-          >
-            Movies
-          </Button>
-          <Menu
-            anchorEl={movieAnchorEl}
-            open={Boolean(movieAnchorEl)}
-            onClose={() => setMovieAnchorEl(null)}
-          >
-            <MenuItem onClick={() => handleMoviesMenuClose("Top Rated Movies")}>
-              Top Rated
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleMoviesMenuClose("Now Playing Movies")}
-            >
-              Now Playing
-            </MenuItem>
+          {/* PILIHAN KATEGORI MOVIES & TV SHOWS */}
+          <Button sx={{ marginLeft: "auto", color: "#333" }} color="inherit" onClick={handleMoviesMenuClick}> Movies </Button>
+          <Menu anchorEl={movieAnchorEl} open={Boolean(movieAnchorEl)} onClose={() => setMovieAnchorEl(null)}>
+            <MenuItem onClick={() => handleMoviesMenuClose("Top Rated Movies")}> Top Rated </MenuItem>
+            <MenuItem onClick={() => handleMoviesMenuClose("Now Playing Movies")}> Now Playing </MenuItem>
           </Menu>
 
-          <Button
-            sx={{ color: "#333" }}
-            color="inherit"
-            onClick={handleTVShowsMenuClick}
-          >
-            TV Shows
-          </Button>
-          <Menu
-            anchorEl={tvShowAnchorEl}
-            open={Boolean(tvShowAnchorEl)}
-            onClose={() => setTVShowAnchorEl(null)}
-          >
-            <MenuItem
-              onClick={() => handleTVShowsMenuClose("Top Rated TV Shows")}
-            >
-              Top Rated
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}
-            >
-              Airing Today
-            </MenuItem>
+          <Button sx={{ color: "#333"}} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
+          <Menu anchorEl={tvShowAnchorEl} open={Boolean(tvShowAnchorEl)} onClose={() => setTVShowAnchorEl(null)}>
+            <MenuItem onClick={() => handleTVShowsMenuClose("Top Rated TV Shows")}> Top Rated </MenuItem>
+            <MenuItem onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}> Airing Today </MenuItem>
           </Menu>
 
+          {/* SEARCHBAR */}
           <Autocomplete
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, ml: 2, width: "200px" }}
             freeSolo
             options={searchResults.map(
               (option: any) => option.title || option.name
@@ -173,12 +145,11 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
                   ...params.InputProps,
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{color:"#333"}}/>
+                      <SearchIcon />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
-                  marginLeft: "20px",
                   backgroundColor: "white",
                   borderRadius: 10,
                   width: "100%",

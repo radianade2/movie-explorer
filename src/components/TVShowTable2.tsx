@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "../components/ShowsTable.css";
 import {
   createColumnHelper,
   flexRender,
@@ -9,11 +8,9 @@ import {
 import {
   fetchAiringTodayTVShows,
   fetchGenres,
-  fetchTopRatedTV,
 } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import { colors } from "@mui/material";
 
 interface User {
   poster_path: string;
@@ -73,7 +70,7 @@ const columns = (
   }),
 ];
 
-const TVShowTable = () => {
+const TVShowTable2 = () => {
   const [tvShows, setTV] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
@@ -197,4 +194,4 @@ const TVShowTable = () => {
   );
 };
 
-export default TVShowTable;
+export default TVShowTable2;

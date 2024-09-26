@@ -3,30 +3,40 @@
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #333; /* Set background color to #333 */
-  color: white; /* Set text color to white */
-  border-radius: 5px; /* Add border-radius to the table */
-  overflow: hidden; /* Ensure the rounded corners are visible */
-  margin-top: "20px";
+  /*background-color: #333; /* Set background color to #333 */
+  /*color: white; /* Set text color to white */
+  /*border-radius: 5px; /* Add border-radius to the table */
+ /* overflow: hidden; /* Ensure the rounded corners are visible */
+  /*margin-top: "20px";*/
+  margin-bottom: "20px";
 }
 
 .users-table th, 
 .users-table td {
   padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #555; /* Set border color to a lighter shade for separation */
+  text-align: center;
+  /*border-bottom: 1px solid #555; /* Set border color to a lighter shade for separation */
+  border-top: 1px solid #ddd; /* Hanya tambahkan garis di atas */
+  border-bottom: 1px solid #ddd; /* Hanya tambahkan garis di bawah */
+  border-left: none; /* Hilangkan garis pembatas kiri */
+  border-right: none; /* Hilangkan garis pembatas kanan */
 }
 
 .users-table th {
-  background-color: #444; /* Slightly different background for table headers */
+  background-color: #333; /* Slightly different background for table headers */
 }
 
-.users-table td {
-  color: white; /* Ensure text in cells is white */
-}
 
 .users-table img {
-  border-radius: 5px; /* Add border-radius to images if needed */
+  border-radius: 10px; /* Add border-radius to images if needed */
+}
+
+.users-table tr:nth-child(even) {
+  background-color: #f9f9f9; /* Tambahkan warna latar belakang berbeda untuk baris genap */
+}
+
+.users-table tr:hover {
+  background-color: #f1f1f1; /* Tambahkan efek hover untuk baris */
 }
 
 .users-table-cell {
