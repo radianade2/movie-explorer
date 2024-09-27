@@ -13,12 +13,14 @@ import {
   fetchTopRatedTV,
   fetchGenres,
 } from "../api/apiConfig";
-import { Tabs, Tab, IconButton } from "@mui/material"; // Import Tabs and Tab components
+// import axios from "axios";
+import { Tabs, Tab} from "@mui/material"; // Import Tabs and Tab components
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import IconButton from "@mui/material/IconButton";
 
-interface Movie {
+interface User {
   poster_path: string;
   title: string;
   genre_ids: number[];
@@ -28,41 +30,49 @@ interface Movie {
   isBookmarked: boolean;
 }
 
-const columnHelper = createColumnHelper<Movie>();
+const columnHelper = createColumnHelper<User>();
 
-// Function to create table columns
 const columns = (
   genreMap: { [key: number]: string },
   handleLike: (movieId: number) => void,
   handleBookmark: (movieId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
-    header: "Poster",
+    header: () => "Poster",
     cell: (info) => (
       <img
         src={`https://image.tmdb.org/t/p/w200${info.getValue()}`}
         alt={info.row.original.title}
-        style={{ height: "100px", borderRadius: "8px" }}
+        style={{ height: "100px", borderRadius: "8px" }} // Rounded edges for more style
       />
     ),
   }),
   columnHelper.accessor("title", {
-    header: "Title",
-    cell: (info) => <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>,
+    header: () => "Title",
+    cell: (info) => (
+      <span style={{ fontWeight: "bold" }}>{info.getValue()}</span>
+    ), // Make title bold
   }),
   columnHelper.accessor("genre_ids", {
-    header: "Genre",
+    header: () => "Genre",
     cell: (info) => {
-      const genres = info.getValue().map((id) => genreMap[id]).filter(Boolean);
+      const genres = info
+        .getValue()
+        .map((id) => genreMap[id])
+        .filter(Boolean);
+
       return genres.length > 0 ? genres.join(", ") : "Unknown";
     },
   }),
   columnHelper.accessor("vote_average", {
-    header: "Rating",
-    cell: (info) => info.getValue().toFixed(1),
+    header: () => "Rating",
+    cell: (info) => {
+      const rating = info.getValue();
+      return rating.toFixed(1);
+    },
   }),
   columnHelper.accessor("like", {
-    header: "Like",
+    header: () => "Like",
     cell: (info) => {
       const movie = info.row.original;
       return (
@@ -76,7 +86,7 @@ const columns = (
     },
   }),
   columnHelper.accessor("isBookmarked", {
-    header: "Bookmark",
+    header: () => "Bookmark",
     cell: (info) => {
       const movie = info.row.original;
       return (
@@ -89,18 +99,19 @@ const columns = (
 ];
 
 const MovieTable = () => {
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [category, setCategory] = useState("top-rated-movies");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [tabIndex, setTabIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(0); // State for managing the active tab
 
   useEffect(() => {
     const fetchAllData = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
+  
         // Fetch genres
         const fetchedGenres = await fetchGenres();
         const genreMap = fetchedGenres.reduce(
@@ -111,47 +122,60 @@ const MovieTable = () => {
           {}
         );
         setGenres(genreMap);
-    
-        // Fetch movies or TV shows
+  
+        // Fetch movies/shows based on category
+        await fetchMoviesOrShows(category, page);
+  
+        // Load bookmarks and likes from localStorage
+        const savedBookmarks = JSON.parse(localStorage.getItem("bookmarks") || "[]");
         const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
-    
-        const fetchedData = await fetchMoviesOrShows(category, page); // Assuming fetchMoviesOrShows returns an object
-        const fetchedMovies = fetchedData.results; // Extract the array of movies
-        const totalPages = fetchedData.total_pages; // Extract total pages for pagination
-    
-        const moviesWithLikes = fetchedMovies.map((movie: Movie) => ({
-          ...movie,
-          like: savedLikes[movie.id] !== undefined ? savedLikes[movie.id] : movie.like || 0, // Pastikan nilai awalnya angka atau boolean
-        }));
-    
-        setMovies(moviesWithLikes); // Set the actual movies array
-        setTotalPages(totalPages); // Set total pages for pagination
+  
+        // Update movies with bookmark and like data from localStorage
+        setMovies((prevMovies) =>
+          prevMovies.map((movie) => ({
+            ...movie,
+            bookmarked: savedBookmarks.includes(movie.id), // Check if movie is bookmarked
+            like: savedLikes[movie.id] || 0, // Load like status (default to 0 if not found)
+          }))
+        );
       } catch (error) {
         console.error("Error fetching data", error);
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     fetchAllData();
-  }, [category, page]);
+  }, [category, page]);  
+  
 
   const fetchMoviesOrShows = async (category: string, page: number) => {
-    switch (category) {
-      case "top-rated-movies":
-        return await fetchTopRatedMovies(page);
-      case "now-playing-movies":
-        return await fetchNowPlayingMovies(page);
-      case "top-rated-tv":
-        return await fetchTopRatedTV(page);
-      case "airing-today-tv":
-        return await fetchAiringTodayTVShows(page);
-      default:
-        return await fetchTopRatedMovies(page);
+    try {
+      let fetchedData;
+      switch (category) {
+        case "top-rated-movies":
+          fetchedData = await fetchTopRatedMovies(page);
+          break;
+        case "now-playing-movies":
+          fetchedData = await fetchNowPlayingMovies(page);
+          break;
+        case "top-rated-tv":
+          fetchedData = await fetchTopRatedTV(page);
+          break;
+        case "airing-today-tv":
+          fetchedData = await fetchAiringTodayTVShows(page);
+          break;
+        default:
+          fetchedData = await fetchTopRatedMovies(page);
+      }
+      setMovies(fetchedData.results);
+      setTotalPages(fetchedData.total_pages);
+    } catch (error) {
+      console.error("Error fetching data", error);
     }
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     switch (newValue) {
       case 0:
@@ -172,18 +196,23 @@ const MovieTable = () => {
   };
 
   const handleLike = (movieId: number) => {
+    const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
+  
+    // Toggle like status
+    const updatedLikes = {
+      ...savedLikes,
+      [movieId]: (savedLikes[movieId] || 0) + 1,
+    };
+  
+    // Simpan kembali ke localStorage
+    localStorage.setItem("likes", JSON.stringify(updatedLikes));
+  
+    // Update state lokal
     setMovies((prevMovies) =>
       prevMovies.map((movie) =>
-        movie.id === movieId
-          ? { ...movie, like: movie.like + 1 }
-          : movie
+        movie.id === movieId ? { ...movie, like: updatedLikes[movieId] } : movie
       )
     );
-
-    // Update likes in localStorage
-    const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
-    savedLikes[movieId] = (savedLikes[movieId] || 0) + 1;
-    localStorage.setItem("likes", JSON.stringify(savedLikes));
   };
 
   const handleBookmark = (movieId: number) => {
@@ -194,7 +223,20 @@ const MovieTable = () => {
           : movie
       )
     );
+  
+    // Update localStorage
+    const bookmarkedMovies = JSON.parse(localStorage.getItem("bookmarkedMovies") || "[]");
+    
+    if (bookmarkedMovies.includes(movieId)) {
+      // Remove from bookmarks
+      const updatedBookmarks = bookmarkedMovies.filter((id: number) => id !== movieId);
+      localStorage.setItem("bookmarkedMovies", JSON.stringify(updatedBookmarks));
+    } else {
+      // Add to bookmarks
+      localStorage.setItem("bookmarkedMovies", JSON.stringify([...bookmarkedMovies, movieId]));
+    }
   };
+  
 
   const table = useReactTable({
     data: movies,
@@ -204,12 +246,21 @@ const MovieTable = () => {
     pageCount: totalPages,
   });
 
-  const nextPage = () => page < totalPages && setPage(page + 1);
-  const prevPage = () => page > 1 && setPage(page - 1);
+  const nextPage = () => {
+    if (page < totalPages) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (page > 1) {
+      setPage((prev) => prev - 1);
+    }
+  };
 
   return (
     <div className="movie-table-container">
-      <h2 className="table-header">Movies and TV Shows</h2>
+      <h2 className="table-header"> Movies and TV Shows </h2>
 
       {/* Material UI Tabs */}
       <Tabs
@@ -220,11 +271,21 @@ const MovieTable = () => {
         scrollButtons="auto"
         centered
         sx={{
-          ".MuiTab-root": { fontSize: "0.8rem", color: "#9e9e9e" },
-          ".Mui-selected": { color: "#FECE04", fontWeight: "bold" },
-          ".MuiTabs-indicator": { backgroundColor: "#FECE04" },
+          // Custom styles untuk tabs
+          ".MuiTab-root": {
+            fontSize: "0.8rem", // font size semua tabs
+            color: "#9e9e9e", // Default color (custom gray)
+          },
+          ".Mui-selected": {
+            color: "#FECE04", // Custom color untuk selected tab
+            fontWeight: "bold", // Bold font untuk selected tab
+          },
+          ".MuiTabs-indicator": {
+            backgroundColor: "#FECE04", // Custom indicator color
+          },
+
           mb: 2,
-        }}
+        }} // Color of the indicator (underline)
       >
         <Tab label="Top Rated Movies" />
         <Tab label="Now Playing Movies" />
@@ -232,47 +293,45 @@ const MovieTable = () => {
         <Tab label="Airing Today TV Shows" />
       </Tabs>
 
-      {isLoading ? (
-        <p>Loading...</p>
-      ) : (
-        <table className="users-table">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {isLoading && <p>Loading...</p>}
+      <table className="users-table">
+        <thead>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th key={header.id}>
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="pagination-controls">
         <button onClick={prevPage} disabled={page === 1}>
-          Previous
+          {"<"}
         </button>
         <span>
-          Page {page} of {totalPages}
+          {" "}
+          Page {page} of {totalPages}{" "}
         </span>
         <button onClick={nextPage} disabled={page === totalPages}>
-          Next
+          {">"}
         </button>
       </div>
     </div>

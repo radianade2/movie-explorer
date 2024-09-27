@@ -101,3 +101,39 @@ export const fetchAiringTodayTVShows = async (page: number = 1) => {
     return { results: [], total_pages: 1, total_results: 0 };
   }
 };
+
+// Fetch movies by their IDs
+export const fetchMoviesByIds = async (ids: number[]) => {
+  try {
+    const promises = ids.map((id) => axiosInstance.get(`/movie/${id}`));
+    const responses = await Promise.all(promises);
+    return responses.map((response) => ({
+      id: response.data.id,
+      title: response.data.title,
+      poster_path: response.data.poster_path,
+      genre_ids: response.data.genre_ids,
+      vote_average: response.data.vote_average,
+    }));
+  } catch (error) {
+    console.error('Error fetching movies by IDs:', error);
+    return [];
+  }
+};
+
+// Fetch TV shows by their IDs
+export const fetchTVShowsByIds = async (ids: number[]) => {
+  try {
+    const promises = ids.map((id) => axiosInstance.get(`/tv/${id}`));
+    const responses = await Promise.all(promises);
+    return responses.map((response) => ({
+      id: response.data.id,
+      title: response.data.name,  // TV shows use 'name' instead of 'title'
+      poster_path: response.data.poster_path,
+      genre_ids: response.data.genre_ids,
+      vote_average: response.data.vote_average,
+    }));
+  } catch (error) {
+    console.error('Error fetching TV shows by IDs:', error);
+    return [];
+  }
+};

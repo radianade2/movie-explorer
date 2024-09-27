@@ -8,6 +8,7 @@ import MovieTopRatedPage from './pages/MovieTopRatedPage';
 import MovieNowPlayingPage from './pages/MovieNowPlayingPage';
 import TVAiringTodayPage from './pages/TVAiringTodayPage';
 import TVTopRatedPage from './pages/TVTopRatedPage';
+import BookmarkPage from './pages/BookmarkPage';
 const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("Top Rated Movies");
   const handleCategorySelect = (category: string) => {
@@ -26,6 +27,7 @@ const App: React.FC = () => {
         <Route path="/movies/now-playing" element={<MovieNowPlayingPage />} />
         <Route path="/tv/top-rated" element={<TVTopRatedPage />} />
         <Route path="/tv/airing-today" element={<TVAiringTodayPage />} />
+        <Route path="/bookmarks" element={<BookmarkPage />} />
       </Routes>
 
       <Footer />
