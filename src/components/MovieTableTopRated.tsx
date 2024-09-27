@@ -7,7 +7,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { fetchTopRatedMovies, fetchGenres } from "../api/apiConfig";
-import axios from "axios";
+// import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 // import { colors } from "@mui/material";
 

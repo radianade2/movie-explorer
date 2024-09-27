@@ -122,9 +122,8 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
             <MenuItem onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}> Airing Today </MenuItem>
           </Menu>
 
-          <Button sx={{ color: "#333"}} color="inherit" > Bookmark </Button>
+          <Button sx={{ color: "#333" }} color="inherit" onClick={() => navigate("/bookmarks")}> Bookmark </Button>
           
-
           {/* SEARCHBAR */}
           <Autocomplete
             sx={{ mr: 2, ml: 2, width: "200px" }}
