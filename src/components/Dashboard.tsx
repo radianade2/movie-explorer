@@ -14,7 +14,7 @@ import {
   fetchGenres,
 } from "../api/apiConfig";
 // import axios from "axios";
-import { Tabs, Tab} from "@mui/material"; // Import Tabs and Tab components
+import { Tabs, Tab } from "@mui/material"; // Import Tabs and Tab components
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
@@ -88,10 +88,10 @@ const columns = (
   columnHelper.accessor("isBookmarked", {
     header: () => "Bookmark",
     cell: (info) => {
-      const movie = info.row.original;
+      const item = info.row.original;
       return (
-        <IconButton onClick={() => handleBookmark(movie.id)}>
-          {movie.isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+        <IconButton onClick={() => handleBookmark(item.id)}>
+          {item.isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
         </IconButton>
       );
     },
@@ -111,8 +111,6 @@ const MovieTable = () => {
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
-  
-        // Fetch genres
         const fetchedGenres = await fetchGenres();
         const genreMap = fetchedGenres.reduce(
           (acc: { [key: number]: string }, genre: { id: number; name: string }) => {
@@ -122,20 +120,21 @@ const MovieTable = () => {
           {}
         );
         setGenres(genreMap);
-  
-        // Fetch movies/shows based on category
+
         await fetchMoviesOrShows(category, page);
-  
-        // Load bookmarks and likes from localStorage
-        const savedBookmarks = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+
+        // Ambil bookmark dari localStorage sesuai kategori
+        const storageKey = category.includes("movie") ? "bookmarkedMovies" : "bookmarkedTVShows";
+        const bookmarkedItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
         const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
-  
-        // Update movies with bookmark and like data from localStorage
+
+        // Update status isBookmarked
         setMovies((prevMovies) =>
-          prevMovies.map((movie) => ({
-            ...movie,
-            bookmarked: savedBookmarks.includes(movie.id), // Check if movie is bookmarked
-            like: savedLikes[movie.id] || 0, // Load like status (default to 0 if not found)
+          prevMovies.map((item) => ({
+            ...item,
+            isBookmarked: bookmarkedItems.includes(item.id),
+            like: savedLikes[item.id] || 0,
           }))
         );
       } catch (error) {
@@ -144,10 +143,9 @@ const MovieTable = () => {
         setIsLoading(false);
       }
     };
-  
+
     fetchAllData();
-  }, [category, page]);  
-  
+  }, [category, page]);
 
   const fetchMoviesOrShows = async (category: string, page: number) => {
     try {
@@ -215,28 +213,24 @@ const MovieTable = () => {
     );
   };
 
-  const handleBookmark = (movieId: number) => {
+  const handleBookmark = (id: number) => {
+    let storageKey = category.includes("movie") ? "bookmarkedMovies" : "bookmarkedTVShows";
+    const bookmarkedItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+    // Toggle bookmark status
+    if (bookmarkedItems.includes(id)) {
+      const updatedBookmarks = bookmarkedItems.filter((itemId: number) => itemId !== id);
+      localStorage.setItem(storageKey, JSON.stringify(updatedBookmarks));
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify([...bookmarkedItems, id]));
+    }
+
     setMovies((prevMovies) =>
-      prevMovies.map((movie) =>
-        movie.id === movieId
-          ? { ...movie, isBookmarked: !movie.isBookmarked }
-          : movie
+      prevMovies.map((item) =>
+        item.id === id ? { ...item, isBookmarked: !item.isBookmarked } : item
       )
     );
-  
-    // Update localStorage
-    const bookmarkedMovies = JSON.parse(localStorage.getItem("bookmarkedMovies") || "[]");
-    
-    if (bookmarkedMovies.includes(movieId)) {
-      // Remove from bookmarks
-      const updatedBookmarks = bookmarkedMovies.filter((id: number) => id !== movieId);
-      localStorage.setItem("bookmarkedMovies", JSON.stringify(updatedBookmarks));
-    } else {
-      // Add to bookmarks
-      localStorage.setItem("bookmarkedMovies", JSON.stringify([...bookmarkedMovies, movieId]));
-    }
   };
-  
 
   const table = useReactTable({
     data: movies,
@@ -260,7 +254,7 @@ const MovieTable = () => {
 
   return (
     <div className="movie-table-container">
-      <h2 className="table-header"> Movies and TV Shows </h2>
+      <h2 className="table-header">Movies and TV Shows</h2>
 
       {/* Material UI Tabs */}
       <Tabs
@@ -271,21 +265,19 @@ const MovieTable = () => {
         scrollButtons="auto"
         centered
         sx={{
-          // Custom styles untuk tabs
           ".MuiTab-root": {
-            fontSize: "0.8rem", // font size semua tabs
-            color: "#9e9e9e", // Default color (custom gray)
+            fontSize: "0.8rem",
+            color: "#9e9e9e",
           },
           ".Mui-selected": {
-            color: "#FECE04", // Custom color untuk selected tab
-            fontWeight: "bold", // Bold font untuk selected tab
+            color: "#FECE04",
+            fontWeight: "bold",
           },
           ".MuiTabs-indicator": {
-            backgroundColor: "#FECE04", // Custom indicator color
+            backgroundColor: "#FECE04",
           },
-
           mb: 2,
-        }} // Color of the indicator (underline)
+        }}
       >
         <Tab label="Top Rated Movies" />
         <Tab label="Now Playing Movies" />
