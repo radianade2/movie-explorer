@@ -9,6 +9,7 @@ import {
 import { fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
 import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import { useNowPlayingMovies } from "../api/fetchingData";
 // import { colors } from "@mui/material";
 
 interface User {
@@ -76,8 +77,9 @@ const MovieTableNowPlaying = () => {
   const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
-  const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { data, isLoading } = useNowPlayingMovies(page);
+  console.log(data);
 
   // Helper function untuk load likes dari localStorage
   const loadLikesFromLocalStorage = () => {
@@ -90,52 +92,6 @@ const MovieTableNowPlaying = () => {
     localStorage.setItem("likes", JSON.stringify(likes));
   };
 
-  useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        setIsLoading(true);
-        const fetchedGenres = await fetchGenres();
-        const genreMap = fetchedGenres.reduce(
-          (
-            acc: { [key: number]: string },
-            genre: { id: number; name: string }
-          ) => {
-            acc[genre.id] = genre.name;
-            return acc;
-          },
-          {}
-        );
-        setGenres(genreMap);
-
-        // Fetching halaman pertama dari now-playing movies
-        await fetchMovies(page);
-      } catch (error) {
-        console.error("Error fetching data", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAllData();
-  }, [page]);
-
-  const fetchMovies = async (page: number) => {
-    try {
-      const fetchedMovies = await fetchNowPlayingMovies(page); // Pass page and limit 5 items
-      const savedLikes = loadLikesFromLocalStorage();
-
-      // Update movies dengan likes dari localStorage
-      const moviesWithLikes = fetchedMovies.results.map((movie: User) => ({
-        ...movie,
-        like: savedLikes[movie.id] !== undefined ? savedLikes[movie.id] : 0, // Menggunakan like yang sudah ada atau default ke 0
-      }));
-
-      setMovies(moviesWithLikes); 
-      setTotalPages(fetchedMovies.total_pages); // Set total pages dari API response
-    } catch (error) {
-      console.error("Error fetching movies", error);
-    }
-  };
-
   const handleLike = (movieId: number) => {
     // Update like count dari movie
     const updatedMovies = movies.map((movie) =>
@@ -145,20 +101,21 @@ const MovieTableNowPlaying = () => {
 
     // Update localStorage
     const savedLikes = loadLikesFromLocalStorage();
-    savedLikes[movieId] = updatedMovies.find((movie) => movie.id === movieId)?.like || 0;
+    savedLikes[movieId] =
+      updatedMovies.find((movie) => movie.id === movieId)?.like || 0;
     saveLikesToLocalStorage(savedLikes);
   };
 
   const table = useReactTable({
-    data: movies,
+    data: data?.results ?? [],
     columns: columns(genres, handleLike),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // Enable manual pagination
-    pageCount: totalPages,
+    pageCount: data?.total_pages,
   });
 
   const nextPage = () => {
-    if (page < totalPages) {
+    if (page < data?.total_pages) {
       setPage((prev) => prev + 1);
     }
   };
@@ -205,8 +162,8 @@ const MovieTableNowPlaying = () => {
           {" "}
           {"<"}{" "}
         </button>
-        <span>{`Page ${page} of ${totalPages}`}</span>
-        <button onClick={nextPage} disabled={page === totalPages}>
+        <span>{`Page ${page} of ${data?.total_pages}`}</span>
+        <button onClick={nextPage} disabled={page === data?.total_pages}>
           {">"}
         </button>
       </div>
