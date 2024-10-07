@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-table";
 import { fetchGenres, fetchTopRatedTV } from "../api/apiConfig";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import { useTopRatedTV } from "../api/fetchingData";
 
 interface User {
   poster_path: string;
@@ -72,8 +73,10 @@ const TVShowTableTopRated = () => {
   const [tvShows, setTV] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [page, setPage] = useState(1); // Pagination state
-  const [totalPages, setTotalPages] = useState(1); // To track total pages from the API
-  const [isLoading, setIsLoading] = useState(false);
+
+  const {data, isLoading} = useTopRatedTV(page);
+  console.log(data);
+
 
   // Helper function untuk load likes dari localStorage
   const loadLikesFromLocalStorage = () => {
@@ -130,13 +133,36 @@ const TVShowTableTopRated = () => {
   const table = useReactTable({
     data: tvShows,
     columns: columns(genres),
+
+    // Helper function untuk menyimpan likes ke localStorage
+  const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
+    localStorage.setItem("likes", JSON.stringify(likes));
+  };
+
+
+  const handleLike = (tvId: number) => {
+    // Update like count untuk the movie
+    const updatedTV = tvShows.map((tvShows) =>
+      tvShows.id === tvId ? { ...tvShows, like: tvShows.like ? 0 : 1 } : tvShows
+    );
+    setTV(updatedTV);
+
+    // Update localStorage
+    const savedLikes = loadLikesFromLocalStorage();
+    savedLikes[tvId] = updatedTV.find((tv) => tv.id === tvId)?.like || 0;
+    saveLikesToLocalStorage(savedLikes);
+  };
+
+  const table = useReactTable({
+    data: data?.results??[],
+    columns: columns(genres, handleLike),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // Enable manual pagination
-    pageCount: totalPages,
+    pageCount: data?.total_pages,
   });
 
   const nextPage = () => {
-    if (page < totalPages) {
+    if (page < data?.total_pages) {
       setPage((prev) => prev + 1);
     }
   };
@@ -183,8 +209,8 @@ const TVShowTableTopRated = () => {
           {" "}
           {"<"}{" "}
         </button>
-        <span>{`Page ${page} of ${totalPages}`}</span>
-        <button onClick={nextPage} disabled={page === totalPages}>
+        <span>{`Page ${page} of ${data?.total_pages}`}</span>
+        <button onClick={nextPage} disabled={page === data?.total_pages}>
           {">"}
         </button>
       </div>
