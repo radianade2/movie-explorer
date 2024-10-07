@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-// import "../components/ShowsTable.css";
 import {
   createColumnHelper,
   flexRender,
@@ -7,9 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
-import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-// import { colors } from "@mui/material";
 
 interface User {
   poster_path: string;
@@ -24,7 +21,6 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = (
   genreMap: { [key: number]: string },
-  handleLike: (movieId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
@@ -85,11 +81,6 @@ const MovieTableNowPlaying = () => {
     return savedLikes;
   };
 
-  // Helper function untuk menyimpan likes ke localStorage
-  const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
-    localStorage.setItem("likes", JSON.stringify(likes));
-  };
-
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -136,22 +127,9 @@ const MovieTableNowPlaying = () => {
     }
   };
 
-  const handleLike = (movieId: number) => {
-    // Update like count dari movie
-    const updatedMovies = movies.map((movie) =>
-      movie.id === movieId ? { ...movie, like: movie.like ? 0 : 1 } : movie
-    );
-    setMovies(updatedMovies);
-
-    // Update localStorage
-    const savedLikes = loadLikesFromLocalStorage();
-    savedLikes[movieId] = updatedMovies.find((movie) => movie.id === movieId)?.like || 0;
-    saveLikesToLocalStorage(savedLikes);
-  };
-
   const table = useReactTable({
     data: movies,
-    columns: columns(genres, handleLike),
+    columns: columns(genres),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // Enable manual pagination
     pageCount: totalPages,

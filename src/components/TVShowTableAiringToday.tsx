@@ -8,9 +8,7 @@ import {
 import {
   fetchAiringTodayTVShows,
   fetchGenres,
-  fetchTopRatedTV,
 } from "../api/apiConfig";
-import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 
 interface User {
@@ -26,7 +24,6 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = (
   genreMap: { [key: number]: string },
-  handleLike: (tvId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
@@ -87,11 +84,6 @@ const TVShowTableAiringToday = () => {
     return savedLikes;
   };
 
-  // Helper function untuk menyimpan likes ke localStorage
-  const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
-    localStorage.setItem("likes", JSON.stringify(likes));
-  };
-
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -138,22 +130,9 @@ const TVShowTableAiringToday = () => {
     }
   };
 
-  const handleLike = (tvId: number) => {
-    // Update like count untuk movie
-    const updatedTV = tvShows.map((tvShows) =>
-      tvShows.id === tvId ? { ...tvShows, like: tvShows.like ? 0 : 1 } : tvShows
-    );
-    setTV(updatedTV);
-
-    // Update localStorage
-    const savedLikes = loadLikesFromLocalStorage();
-    savedLikes[tvId] = updatedTV.find((tv) => tv.id === tvId)?.like || 0;
-    saveLikesToLocalStorage(savedLikes);
-  };
-
   const table = useReactTable({
     data: tvShows,
-    columns: columns(genres, handleLike),
+    columns: columns(genres),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // Enable manual pagination
     pageCount: totalPages,

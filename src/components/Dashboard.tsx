@@ -98,7 +98,7 @@ const columns = (
   }),
 ];
 
-const MovieTable = () => {
+const Dashboard = () => {
   const [movies, setMovies] = useState<User[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [category, setCategory] = useState("top-rated-movies");
@@ -173,7 +173,7 @@ const MovieTable = () => {
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     switch (newValue) {
       case 0:
@@ -214,7 +214,7 @@ const MovieTable = () => {
   };
 
   const handleBookmark = (id: number) => {
-    let storageKey = category.includes("movie") ? "bookmarkedMovies" : "bookmarkedTVShows";
+    const storageKey = category.includes("movie") ? "bookmarkedMovies" : "bookmarkedTVShows";
     const bookmarkedItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
 
     // Toggle bookmark status
@@ -330,4 +330,4 @@ const MovieTable = () => {
   );
 };
 
-export default MovieTable;
+export default Dashboard;

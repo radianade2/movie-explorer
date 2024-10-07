@@ -22,13 +22,13 @@ interface Props {
 
 const searchSchema = z
   .string()
-  .min(3, "Search query must be at least 3 characters long");
+  .min(1);
 
 const Header: React.FC<Props> = ({ onCategorySelect }) => {
   const [movieAnchorEl, setMovieAnchorEl] = useState<null | HTMLElement>(null);
   const [tvShowAnchorEl, setTVShowAnchorEl] = useState<null | HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null); // State for error message
 
   const navigate = useNavigate();
@@ -42,9 +42,9 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
     setMovieAnchorEl(null);
 
     if (category === "Top Rated Movies") {
-      navigate("/movies/top-rated"); // Navigasi ke halaman MovieTable
+      navigate("/movies/top-rated");
     } else if (category === "Now Playing Movies") {
-      navigate("/movies/now-playing"); 
+      navigate("/movies/now-playing");
     }
   };
 
@@ -54,57 +54,57 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
   };
 
   const handleTVShowsMenuClose = (category: string) => {
-    console.log("Navigating to:", category);
     setTVShowAnchorEl(null);
-    
+
     if (category === "Top Rated TV Shows") {
-      navigate("/tv/top-rated"); // Navigasi ke halaman TVShowTable
+      navigate("/tv/top-rated");
     } else if (category === "Airing Today TV Shows") {
-      navigate("/tv/airing-today"); 
+      navigate("/tv/airing-today");
     }
 
     onCategorySelect(category);
   };
 
   // SEARCHBAR
-  const handleSearchChange = async (newInputValue: string) => {
+  const handleSearchChange = (newInputValue: string) => {
     setSearchQuery(newInputValue);
+    setSearchError(null); // Reset error when typing
+  };
 
-    try {
-      // Validate search query using zod schema
-      searchSchema.parse(newInputValue);
-      setSearchError(null); // Reset error if valid
+  const handleSearchSubmit = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      // Check if the search query is empty
+      if (searchQuery.trim() === "") {
+        setSearchError("Ketikkan pencarian anda");
+        return;
+      }
 
-      if (newInputValue.length > 2) {
+      // Validate the search query when Enter is pressed
+      try {
+        searchSchema.parse(searchQuery);
+        setSearchError(null); // Clear any previous error
+
+        // Perform search if query is valid
         const response = await axiosInstance.get("/search/multi", {
           params: {
-            query: newInputValue,
+            query: searchQuery,
             page: 1,
             include_adult: false,
           },
         });
         setSearchResults(response.data.results);
-      } else {
-        setSearchResults([]);
+        navigate(`/search?query=${searchQuery}`);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          setSearchError(error.errors[0].message); // Show validation error
+        }
       }
-    } catch (error) {
-      // Handle validation error
-      if (error instanceof z.ZodError) {
-        setSearchError(error.errors[0].message); // Show error message if validation fails
-        setSearchResults([]);
-      }
-    }
-  };
-
-  const handleSearchSubmit = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && searchQuery.length > 2 && !searchError) {
-      navigate(`/search?query=${searchQuery}`);
     }
   };
 
   return (
     <React.Fragment>
-      <AppBar sx={{ position:"fixed"}}>
+      <AppBar sx={{ position: "fixed" }}>
         <Toolbar sx={{ backgroundColor: "#FECE04", animation: "fadeIn 0.5s" }}>
           {/* Use the new LogoSection component */}
           <LogoSection />
@@ -116,33 +116,29 @@ const Header: React.FC<Props> = ({ onCategorySelect }) => {
             <MenuItem onClick={() => handleMoviesMenuClose("Now Playing Movies")}> Now Playing </MenuItem>
           </Menu>
 
-          <Button sx={{ color: "#333"}} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
+          <Button sx={{ color: "#333" }} color="inherit" onClick={handleTVShowsMenuClick}> TV Shows </Button>
           <Menu anchorEl={tvShowAnchorEl} open={Boolean(tvShowAnchorEl)} onClose={() => setTVShowAnchorEl(null)}>
             <MenuItem onClick={() => handleTVShowsMenuClose("Top Rated TV Shows")}> Top Rated </MenuItem>
             <MenuItem onClick={() => handleTVShowsMenuClose("Airing Today TV Shows")}> Airing Today </MenuItem>
           </Menu>
 
           <Button sx={{ color: "#333" }} color="inherit" onClick={() => navigate("/bookmarks")}> Bookmark </Button>
-          
+
           {/* SEARCHBAR */}
           <Autocomplete
             sx={{ mr: 2, ml: 2, width: "200px" }}
             freeSolo
-            options={searchResults.map(
-              (option: any) => option.title || option.name
-            )}
-            onInputChange={(event, newInputValue) =>
-              handleSearchChange(newInputValue)
-            }
+            options={searchResults.map((option: any) => option.title || option.name)}
+            onInputChange={(event, newInputValue) => handleSearchChange(newInputValue)}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant="outlined"
                 size="small"
-                placeholder="Search..."
+                placeholder={searchError || "Search..."}
                 onKeyDown={handleSearchSubmit} // Submit on Enter
                 error={!!searchError} // Display error state if there's an error
-                helperText={searchError} // Show error message if validation fails
+                // helperText={searchError} // Show error message if validation fails
                 InputProps={{
                   ...params.InputProps,
                   startAdornment: (
