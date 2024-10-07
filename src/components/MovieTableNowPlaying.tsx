@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-// import "../components/ShowsTable.css";
 import {
   createColumnHelper,
   flexRender,
@@ -7,7 +6,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { fetchGenres, fetchNowPlayingMovies } from "../api/apiConfig";
-import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import { useNowPlayingMovies } from "../api/fetchingData";
 // import { colors } from "@mui/material";
@@ -25,7 +23,6 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = (
   genreMap: { [key: number]: string },
-  handleLike: (movieId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
@@ -86,6 +83,56 @@ const MovieTableNowPlaying = () => {
     const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
     return savedLikes;
   };
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedGenres = await fetchGenres();
+        const genreMap = fetchedGenres.reduce(
+          (
+            acc: { [key: number]: string },
+            genre: { id: number; name: string }
+          ) => {
+            acc[genre.id] = genre.name;
+            return acc;
+          },
+          {}
+        );
+        setGenres(genreMap);
+
+        // Fetching halaman pertama dari now-playing movies
+        await fetchMovies(page);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAllData();
+  }, [page]);
+
+  const fetchMovies = async (page: number) => {
+    try {
+      const fetchedMovies = await fetchNowPlayingMovies(page); // Pass page and limit 5 items
+      const savedLikes = loadLikesFromLocalStorage();
+
+      // Update movies dengan likes dari localStorage
+      const moviesWithLikes = fetchedMovies.results.map((movie: User) => ({
+        ...movie,
+        like: savedLikes[movie.id] !== undefined ? savedLikes[movie.id] : 0, // Menggunakan like yang sudah ada atau default ke 0
+      }));
+
+      setMovies(moviesWithLikes); 
+      setTotalPages(fetchedMovies.total_pages); // Set total pages dari API response
+    } catch (error) {
+      console.error("Error fetching movies", error);
+    }
+  };
+
+  const table = useReactTable({
+    data: movies,
+    columns: columns(genres),
 
   // Helper function untuk menyimpan likes ke localStorage
   const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {

@@ -8,9 +8,7 @@ import {
 import {
   fetchAiringTodayTVShows,
   fetchGenres,
-  fetchTopRatedTV,
 } from "../api/apiConfig";
-import axios from "axios";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import { useAiringTodayTV } from "../api/fetchingData";
 
@@ -27,7 +25,6 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = (
   genreMap: { [key: number]: string },
-  handleLike: (tvId: number) => void
 ) => [
   columnHelper.accessor("poster_path", {
     header: () => "Poster",
@@ -89,6 +86,56 @@ const TVShowTableAiringToday = () => {
     const savedLikes = JSON.parse(localStorage.getItem("likes") || "{}");
     return savedLikes;
   };
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedGenres = await fetchGenres();
+        const genreMap = fetchedGenres.reduce(
+          (
+            acc: { [key: number]: string },
+            genre: { id: number; name: string }
+          ) => {
+            acc[genre.id] = genre.name;
+            return acc;
+          },
+          {}
+        );
+        setGenres(genreMap);
+
+        // Fetching halaman pertama dari airing-today tv shows
+        await fetchTV(page);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAllData();
+  }, [page]);
+
+  const fetchTV = async (page: number) => {
+    try {
+      const fetchedTV = await fetchAiringTodayTVShows(page); // Pass page and limit 5 items
+      const savedLikes = loadLikesFromLocalStorage();
+
+      // Update movies dengan likes dari localStorage
+      const tvWithLikes = fetchedTV.results.map((tvShows: User) => ({
+        ...tvShows,
+        like: savedLikes[tvShows.id] !== undefined ? savedLikes[tvShows.id] : 0, // Menggunakan like yang sudah ada atau default ke 0
+      }));
+
+      setTV(tvWithLikes); // Set only current page's results
+      setTotalPages(fetchedTV.total_pages); // Set total pages from API response
+    } catch (error) {
+      console.error("Error fetching movies", error);
+    }
+  };
+
+  const table = useReactTable({
+    data: tvShows,
+    columns: columns(genres),
 
   // Helper function untuk menyimpan likes ke localStorage
   const saveLikesToLocalStorage = (likes: { [key: number]: number }) => {
